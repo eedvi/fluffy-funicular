@@ -18,11 +18,30 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Filament\Facades\Filament;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Table;
 
 class AdminPanelProvider extends PanelProvider
-{
-    public function panel(Panel $panel): Panel
+{   
+    public function boot(): void
     {
+        // Global config to set up the table pagination. If a table has local configuration it will override this configuration.
+        Table::configureUsing(function (Table $table): void {
+            $table
+                ->filtersLayout(FiltersLayout::AboveContentCollapsible)
+                ->paginationPageOptions([5, 10, 25])
+                ->defaultSort('created_at', 'desc')
+                ->deferLoading()
+                ->striped();
+        });
+        Filament::serving(function () {
+            set_time_limit(300);
+            ini_set('memory_limit', '512M');
+        });
+    }
+    public function panel(Panel $panel): Panel
+    {   
         return $panel
             ->default()
             ->id('admin')
@@ -43,7 +62,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

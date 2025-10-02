@@ -34,6 +34,8 @@ class Customer extends Model
         'monthly_income',
         'credit_limit',
         'credit_score',
+        'credit_rating',
+        'credit_score_updated_at',
         'emergency_contact_name',
         'emergency_contact_phone',
         'registration_date',
