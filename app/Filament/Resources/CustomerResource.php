@@ -5,12 +5,14 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\CustomerResource\Pages;
 use App\Filament\Resources\CustomerResource\RelationManagers;
 use App\Models\Customer;
+use App\Services\CreditScoreService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Tables\Filters\TrashedFilter;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
@@ -154,7 +156,7 @@ class CustomerResource extends Resource
 
                 Forms\Components\Section::make('Información de Crédito')
                     ->schema([
-                        Forms\Components\Grid::make(3)
+                        Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('credit_limit')
                                     ->label('Límite de Crédito')
@@ -162,16 +164,29 @@ class CustomerResource extends Resource
                                     ->numeric()
                                     ->default(0)
                                     ->prefix('$'),
-                                Forms\Components\TextInput::make('credit_score')
-                                    ->label('Puntaje de Crédito')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->maxValue(1000),
                                 Forms\Components\DatePicker::make('registration_date')
                                     ->label('Fecha de Registro')
                                     ->required()
                                     ->default(now())
                                     ->displayFormat('d/m/Y'),
+                            ]),
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\TextInput::make('credit_score')
+                                    ->label('Puntaje de Crédito')
+                                    ->numeric()
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->helperText('Se calcula automáticamente'),
+                                Forms\Components\TextInput::make('credit_rating')
+                                    ->label('Calificación')
+                                    ->disabled()
+                                    ->dehydrated(false),
+                                Forms\Components\DateTimePicker::make('credit_score_updated_at')
+                                    ->label('Última Actualización')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->displayFormat('d/m/Y H:i'),
                             ]),
                         Forms\Components\Grid::make(1)
                             ->schema([
@@ -213,6 +228,22 @@ class CustomerResource extends Resource
                     ->money('USD')
                     ->sortable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('credit_score')
+                    ->label('Puntaje')
+                    ->badge()
+                    ->color(fn ($state) => match(true) {
+                        $state >= 750 => 'success',
+                        $state >= 650 => 'info',
+                        $state >= 550 => 'warning',
+                        $state > 0 => 'danger',
+                        default => 'gray'
+                    })
+                    ->formatStateUsing(fn ($state, $record) => $state
+                        ? $state . ' (' . ucfirst($record->credit_rating ?? 'N/A') . ')'
+                        : 'Sin calcular'
+                    )
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Activo')
                     ->boolean()
@@ -227,6 +258,22 @@ class CustomerResource extends Resource
                 TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('calcular_puntaje')
+                    ->label('Calcular Puntaje')
+                    ->icon('heroicon-o-calculator')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->action(function (Customer $record) {
+                        $service = new CreditScoreService();
+                        $service->updateCustomerCreditScore($record);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Puntaje de Crédito Actualizado')
+                            ->body("Puntaje: {$record->credit_score} ({$record->credit_rating})")
+                            ->send();
+                    })
+                    ->hidden(fn (Customer $record) => $record->loans()->count() === 0),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
