@@ -21,6 +21,7 @@ class Payment extends Model
         'reference_number',
         'status',
         'notes',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -37,6 +38,11 @@ class Payment extends Model
     }
 
     // Relationships
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function loan(): BelongsTo
     {
         return $this->belongsTo(Loan::class);

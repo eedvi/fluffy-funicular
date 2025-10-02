@@ -156,8 +156,15 @@ class CustomerResource extends Resource
 
                 Forms\Components\Section::make('Información de Crédito')
                     ->schema([
-                        Forms\Components\Grid::make(2)
+                        Forms\Components\Grid::make(3)
                             ->schema([
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal donde está registrado el cliente'),
                                 Forms\Components\TextInput::make('credit_limit')
                                     ->label('Límite de Crédito')
                                     ->required()
@@ -223,6 +230,12 @@ class CustomerResource extends Resource
                     ->label('Ciudad')
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('credit_limit')
                     ->label('Límite de Crédito')
                     ->money('USD')
@@ -255,6 +268,11 @@ class CustomerResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 TrashedFilter::make(),
             ])
             ->actions([

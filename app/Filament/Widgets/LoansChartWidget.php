@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Branch;
 use App\Models\Loan;
 use Filament\Widgets\ChartWidget;
 
@@ -11,13 +12,35 @@ class LoansChartWidget extends ChartWidget
 
     protected static ?int $sort = 3;
 
+    public ?int $branchFilter = null;
+
+    protected function getFilters(): ?array
+    {
+        $branches = Branch::pluck('name', 'id')->toArray();
+        return [null => 'Todas las sucursales'] + $branches;
+    }
+
     protected function getData(): array
     {
-        $active = Loan::where('status', 'active')->count();
-        $overdue = Loan::where('status', 'overdue')->count();
-        $paid = Loan::where('status', 'paid')->count();
-        $pending = Loan::where('status', 'pending')->count();
-        $defaulted = Loan::where('status', 'defaulted')->count();
+        $active = Loan::where('status', 'active')
+            ->when($this->branchFilter, fn($query) => $query->where('branch_id', $this->branchFilter))
+            ->count();
+
+        $overdue = Loan::where('status', 'overdue')
+            ->when($this->branchFilter, fn($query) => $query->where('branch_id', $this->branchFilter))
+            ->count();
+
+        $paid = Loan::where('status', 'paid')
+            ->when($this->branchFilter, fn($query) => $query->where('branch_id', $this->branchFilter))
+            ->count();
+
+        $pending = Loan::where('status', 'pending')
+            ->when($this->branchFilter, fn($query) => $query->where('branch_id', $this->branchFilter))
+            ->count();
+
+        $defaulted = Loan::where('status', 'defaulted')
+            ->when($this->branchFilter, fn($query) => $query->where('branch_id', $this->branchFilter))
+            ->count();
 
         return [
             'datasets' => [

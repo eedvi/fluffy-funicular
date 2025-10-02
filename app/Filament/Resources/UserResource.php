@@ -56,6 +56,13 @@ class UserResource extends Resource
                                     ->required()
                                     ->options(Role::where('name', '!=', 'super_admin')->pluck('name', 'id'))
                                     ->helperText('Selecciona el rol para este usuario'),
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal a la que pertenece el usuario'),
                             ]),
                     ]),
 
@@ -122,6 +129,12 @@ class UserResource extends Resource
                     ->searchable()
                     ->toggleable()
                     ->icon('heroicon-m-phone'),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Activo')
                     ->boolean()
@@ -137,6 +150,11 @@ class UserResource extends Resource
                     ->label('Rol')
                     ->relationship('roles', 'name')
                     ->preload(),
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 Tables\Filters\TernaryFilter::make('is_active')
                     ->label('Activo')
                     ->placeholder('Todos')

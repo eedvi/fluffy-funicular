@@ -59,6 +59,13 @@ class SaleResource extends Resource
                                     ->searchable(['first_name', 'last_name'])
                                     ->preload()
                                     ->helperText('Opcional - dejar vacío para venta sin cliente registrado'),
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal donde se registra la venta'),
                             ]),
                     ]),
 
@@ -167,6 +174,12 @@ class SaleResource extends Resource
                     ->label('Número')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('item.name')
                     ->label('Artículo')
                     ->searchable()
@@ -208,6 +221,11 @@ class SaleResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 TrashedFilter::make(),
             ])
             ->actions([

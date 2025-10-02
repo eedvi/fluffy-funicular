@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
@@ -41,6 +42,7 @@ class Customer extends Model
         'registration_date',
         'is_active',
         'notes',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -61,6 +63,11 @@ class Customer extends Model
     }
 
     // Relationships
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function loans(): HasMany
     {
         return $this->hasMany(Loan::class);

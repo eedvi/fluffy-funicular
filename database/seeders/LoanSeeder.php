@@ -5,7 +5,10 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Loan;
+use App\Models\Customer;
+use App\Models\Item;
 use Carbon\Carbon;
+use Faker\Factory as Faker;
 
 class LoanSeeder extends Seeder
 {
@@ -14,138 +17,121 @@ class LoanSeeder extends Seeder
      */
     public function run(): void
     {
+        $faker = Faker::create();
+
+        // Get available customers and items
+        $customers = Customer::all();
+        $availableItems = Item::where('status', 'available')->get();
+
+        if ($customers->isEmpty() || $availableItems->isEmpty()) {
+            $this->command->warn('No customers or items available to create loans.');
+            return;
+        }
+
         $loanCounter = 1;
+        $statuses = ['active', 'paid', 'overdue', 'defaulted'];
+        $loanTermOptions = [30, 45, 60, 90];
+        $usedItems = [];
 
-        // Loan 1: Active loan - Customer 1, Item 1 (Laptop)
-        $loan1StartDate = now()->subDays(15);
-        $loan1DueDate = $loan1StartDate->copy()->addDays(30);
-        $loan1Amount = 50000.00; // ARS 50,000
-        $loan1Interest = 10.00; // 10% interest
-        $loan1InterestAmount = $loan1Amount * ($loan1Interest / 100);
-        $loan1Total = $loan1Amount + $loan1InterestAmount;
+        // Create loans with various statuses (up to available items count)
+        $loanCount = min(15, $availableItems->count());
 
-        Loan::create([
-            'loan_number' => 'L-' . now()->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 1,
-            'item_id' => 1,
-            'loan_amount' => $loan1Amount,
-            'interest_rate' => $loan1Interest,
-            'interest_amount' => $loan1InterestAmount,
-            'total_amount' => $loan1Total,
-            'amount_paid' => 15000, // Partial payment made
-            'loan_term_days' => 30,
-            'start_date' => $loan1StartDate,
-            'due_date' => $loan1DueDate,
-            'status' => 'active',
-            'paid_date' => null,
-            'forfeited_date' => null,
-            'notes' => 'Préstamo activo con pago parcial realizado',
-        ]);
+        for ($i = 0; $i < $loanCount; $i++) {
+            $customer = $faker->randomElement($customers);
 
-        // Loan 2: Active loan - Customer 2, Item 2 (Smartphone)
-        $loan2StartDate = now()->subDays(7);
-        $loan2DueDate = $loan2StartDate->copy()->addDays(45);
-        $loan2Amount = 30000.00; // ARS 30,000
-        $loan2Interest = 12.00; // 12% interest
-        $loan2InterestAmount = $loan2Amount * ($loan2Interest / 100);
-        $loan2Total = $loan2Amount + $loan2InterestAmount;
+            // Get an item that hasn't been used yet
+            $remainingItems = $availableItems->reject(fn($item) => in_array($item->id, $usedItems));
+            if ($remainingItems->isEmpty()) {
+                break;
+            }
+            $item = $remainingItems->random();
+            $usedItems[] = $item->id;
 
-        Loan::create([
-            'loan_number' => 'L-' . now()->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 2,
-            'item_id' => 2,
-            'loan_amount' => $loan2Amount,
-            'interest_rate' => $loan2Interest,
-            'interest_amount' => $loan2InterestAmount,
-            'total_amount' => $loan2Total,
-            'amount_paid' => 0, // No payments made yet
-            'loan_term_days' => 45,
-            'start_date' => $loan2StartDate,
-            'due_date' => $loan2DueDate,
-            'status' => 'active',
-            'paid_date' => null,
-            'forfeited_date' => null,
-            'notes' => 'Préstamo reciente sin pagos realizados',
-        ]);
+            $status = $faker->randomElement($statuses);
 
-        // Loan 3: Paid loan - Customer 3, Item 3 (Tablet)
-        $loan3StartDate = now()->subDays(60);
-        $loan3DueDate = $loan3StartDate->copy()->addDays(30);
-        $loan3PaidDate = now()->subDays(5);
-        $loan3Amount = 25000.00; // ARS 25,000
-        $loan3Interest = 8.00; // 8% interest
-        $loan3InterestAmount = $loan3Amount * ($loan3Interest / 100);
-        $loan3Total = $loan3Amount + $loan3InterestAmount;
+            // Calculate loan dates based on status
+            switch ($status) {
+                case 'active':
+                    $startDate = now()->subDays($faker->numberBetween(5, 25));
+                    $loanTerm = $faker->randomElement($loanTermOptions);
+                    $dueDate = $startDate->copy()->addDays($loanTerm);
+                    $paidDate = null;
+                    $forfeitedDate = null;
+                    break;
 
-        Loan::create([
-            'loan_number' => 'L-' . now()->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 3,
-            'item_id' => 3,
-            'loan_amount' => $loan3Amount,
-            'interest_rate' => $loan3Interest,
-            'interest_amount' => $loan3InterestAmount,
-            'total_amount' => $loan3Total,
-            'amount_paid' => $loan3Total, // Fully paid
-            'loan_term_days' => 30,
-            'start_date' => $loan3StartDate,
-            'due_date' => $loan3DueDate,
-            'status' => 'paid',
-            'paid_date' => $loan3PaidDate,
-            'forfeited_date' => null,
-            'notes' => 'Préstamo pagado completamente',
-        ]);
+                case 'paid':
+                    $startDate = now()->subDays($faker->numberBetween(40, 120));
+                    $loanTerm = $faker->randomElement($loanTermOptions);
+                    $dueDate = $startDate->copy()->addDays($loanTerm);
+                    $paidDate = $startDate->copy()->addDays($faker->numberBetween($loanTerm - 10, $loanTerm + 5));
+                    $forfeitedDate = null;
+                    break;
 
-        // Loan 4: Overdue loan - Customer 1, Item 4 (Camera)
-        $loan4StartDate = now()->subDays(75);
-        $loan4DueDate = $loan4StartDate->copy()->addDays(30);
-        $loan4Amount = 40000.00; // ARS 40,000
-        $loan4Interest = 15.00; // 15% interest
-        $loan4InterestAmount = $loan4Amount * ($loan4Interest / 100);
-        $loan4Total = $loan4Amount + $loan4InterestAmount;
+                case 'overdue':
+                    $startDate = now()->subDays($faker->numberBetween(40, 90));
+                    $loanTerm = $faker->randomElement($loanTermOptions);
+                    $dueDate = $startDate->copy()->addDays($loanTerm);
+                    $paidDate = null;
+                    $forfeitedDate = null;
+                    break;
 
-        Loan::create([
-            'loan_number' => 'L-' . now()->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 1,
-            'item_id' => 4,
-            'loan_amount' => $loan4Amount,
-            'interest_rate' => $loan4Interest,
-            'interest_amount' => $loan4InterestAmount,
-            'total_amount' => $loan4Total,
-            'amount_paid' => 10000, // Some payment made but still overdue
-            'loan_term_days' => 30,
-            'start_date' => $loan4StartDate,
-            'due_date' => $loan4DueDate,
-            'status' => 'overdue',
-            'paid_date' => null,
-            'forfeited_date' => null,
-            'notes' => 'Préstamo vencido, cliente no ha completado el pago',
-        ]);
+                case 'defaulted':
+                    $startDate = now()->subDays($faker->numberBetween(90, 180));
+                    $loanTerm = $faker->randomElement($loanTermOptions);
+                    $dueDate = $startDate->copy()->addDays($loanTerm);
+                    $paidDate = null;
+                    $forfeitedDate = now()->subDays($faker->numberBetween(1, 30));
+                    break;
+            }
 
-        // Loan 5: Confiscated loan - Customer 2, Item 5 (Watch)
-        $loan5StartDate = now()->subDays(120);
-        $loan5DueDate = $loan5StartDate->copy()->addDays(30);
-        $loan5ForfeitedDate = now()->subDays(10);
-        $loan5Amount = 35000.00; // ARS 35,000
-        $loan5Interest = 12.00; // 12% interest
-        $loan5InterestAmount = $loan5Amount * ($loan5Interest / 100);
-        $loan5Total = $loan5Amount + $loan5InterestAmount;
+            // Calculate loan amount (50-70% of appraised value)
+            $loanAmount = round($item->appraised_value * $faker->randomFloat(2, 0.5, 0.7), -2);
+            $interestRate = $faker->randomFloat(2, 8, 20); // 8-20% interest
+            $interestAmount = round($loanAmount * ($interestRate / 100), 2);
+            $totalAmount = $loanAmount + $interestAmount;
 
-        Loan::create([
-            'loan_number' => 'L-' . now()->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 2,
-            'item_id' => 5,
-            'loan_amount' => $loan5Amount,
-            'interest_rate' => $loan5Interest,
-            'interest_amount' => $loan5InterestAmount,
-            'total_amount' => $loan5Total,
-            'amount_paid' => 5000, // Minor payment made before confiscation
-            'loan_term_days' => 30,
-            'start_date' => $loan5StartDate,
-            'due_date' => $loan5DueDate,
-            'status' => 'defaulted',
-            'paid_date' => null,
-            'forfeited_date' => $loan5ForfeitedDate,
-            'notes' => 'Artículo confiscado por falta de pago',
-        ]);
+            // Calculate amount paid based on status
+            switch ($status) {
+                case 'active':
+                    $amountPaid = $faker->boolean(60) ? round($totalAmount * $faker->randomFloat(2, 0.1, 0.6), 2) : 0;
+                    break;
+                case 'paid':
+                    $amountPaid = $totalAmount;
+                    break;
+                case 'overdue':
+                    $amountPaid = round($totalAmount * $faker->randomFloat(2, 0, 0.5), 2);
+                    break;
+                case 'defaulted':
+                    $amountPaid = round($totalAmount * $faker->randomFloat(2, 0, 0.3), 2);
+                    break;
+            }
+
+            // Generate notes based on status
+            $notes = match($status) {
+                'active' => $amountPaid > 0 ? 'Préstamo activo con pagos realizados' : 'Préstamo activo sin pagos',
+                'paid' => 'Préstamo completamente saldado',
+                'overdue' => 'Préstamo vencido, pendiente de pago',
+                'defaulted' => 'Artículo confiscado por falta de pago',
+            };
+
+            Loan::create([
+                'loan_number' => 'L-' . $startDate->format('Ymd') . '-' . str_pad($loanCounter++, 4, '0', STR_PAD_LEFT),
+                'customer_id' => $customer->id,
+                'item_id' => $item->id,
+                'loan_amount' => $loanAmount,
+                'interest_rate' => $interestRate,
+                'interest_amount' => $interestAmount,
+                'total_amount' => $totalAmount,
+                'amount_paid' => $amountPaid,
+                'loan_term_days' => $loanTerm,
+                'start_date' => $startDate,
+                'due_date' => $dueDate,
+                'status' => $status,
+                'paid_date' => $paidDate,
+                'forfeited_date' => $forfeitedDate,
+                'notes' => $notes,
+                'branch_id' => $item->branch_id, // Use item's branch
+            ]);
+        }
     }
 }

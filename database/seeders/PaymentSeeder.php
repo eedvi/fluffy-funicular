@@ -6,6 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Payment;
 use App\Models\Loan;
+use Faker\Factory as Faker;
 
 class PaymentSeeder extends Seeder
 {
@@ -14,75 +15,93 @@ class PaymentSeeder extends Seeder
      */
     public function run(): void
     {
-        // Get the loans to link payments
+        $faker = Faker::create();
+
+        // Get all loans
         $loans = Loan::all();
 
+        if ($loans->isEmpty()) {
+            $this->command->warn('No loans available to create payments.');
+            return;
+        }
+
         $paymentCounter = 1;
+        $paymentMethods = ['cash', 'card', 'transfer'];
+        $paymentStatuses = ['completed', 'pending', 'cancelled'];
 
-        // Payment 1: Partial payment for Loan 1 (Active loan)
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 1, // Loan 1
-            'amount' => 15000.00,
-            'payment_method' => 'cash',
-            'payment_date' => now()->subDays(10),
-            'status' => 'completed',
-            'notes' => 'Pago parcial en efectivo',
-        ]);
+        // Create payments for loans
+        foreach ($loans as $loan) {
+            // Skip loans without any payment (amount_paid = 0)
+            if ($loan->amount_paid <= 0) {
+                continue;
+            }
 
-        // Payment 2: Full payment for Loan 3 (Paid loan) - First installment
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 3, // Loan 3
-            'amount' => 15000.00,
-            'payment_method' => 'transfer',
-            'payment_date' => now()->subDays(25),
-            'status' => 'completed',
-            'notes' => 'Primera cuota por transferencia bancaria',
-        ]);
+            // Determine number of payments based on loan status
+            if ($loan->status === 'paid') {
+                // Paid loans: 1-4 payments that sum up to total
+                $numberOfPayments = $faker->numberBetween(1, 4);
+            } elseif ($loan->status === 'active' || $loan->status === 'overdue') {
+                // Active/overdue loans: 1-3 partial payments
+                $numberOfPayments = $faker->numberBetween(1, 3);
+            } elseif ($loan->status === 'defaulted') {
+                // Defaulted loans: typically 1 small payment
+                $numberOfPayments = 1;
+            } else {
+                continue;
+            }
 
-        // Payment 3: Full payment for Loan 3 (Paid loan) - Final payment
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 3, // Loan 3
-            'amount' => 12000.00,
-            'payment_method' => 'cash',
-            'payment_date' => now()->subDays(5),
-            'status' => 'completed',
-            'notes' => 'Pago final en efectivo - préstamo saldado',
-        ]);
+            $remainingAmount = $loan->amount_paid;
+            $paymentsCreated = 0;
 
-        // Payment 4: Partial payment for Loan 4 (Overdue loan)
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 4, // Loan 4
-            'amount' => 10000.00,
-            'payment_method' => 'card',
-            'payment_date' => now()->subDays(50),
-            'status' => 'completed',
-            'notes' => 'Pago parcial con tarjeta de débito',
-        ]);
+            for ($i = 0; $i < $numberOfPayments; $i++) {
+                if ($remainingAmount <= 0) break;
 
-        // Payment 5: Small payment for Loan 5 (Confiscated loan)
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 5, // Loan 5
-            'amount' => 5000.00,
-            'payment_method' => 'cash',
-            'payment_date' => now()->subDays(100),
-            'status' => 'completed',
-            'notes' => 'Único pago realizado antes de la confiscación',
-        ]);
+                // Calculate payment amount
+                if ($i === $numberOfPayments - 1) {
+                    // Last payment: use remaining amount
+                    $paymentAmount = $remainingAmount;
+                } else {
+                    // Intermediate payment: random portion of remaining
+                    $maxAmount = $remainingAmount * 0.7;
+                    $minAmount = min($remainingAmount * 0.2, $remainingAmount);
+                    $paymentAmount = round($faker->randomFloat(2, $minAmount, $maxAmount), -2);
+                }
 
-        // Payment 6: Pending payment for Loan 1
-        Payment::create([
-            'payment_number' => 'P-' . now()->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
-            'loan_id' => 1, // Loan 1
-            'amount' => 20000.00,
-            'payment_method' => 'transfer',
-            'payment_date' => now(),
-            'status' => 'pending',
-            'notes' => 'Pago pendiente de confirmación',
-        ]);
+                $remainingAmount -= $paymentAmount;
+
+                // Calculate payment date relative to loan start date
+                $daysSinceLoanStart = $faker->numberBetween(1, max(1, now()->diffInDays($loan->start_date)));
+                $paymentDate = $loan->start_date->copy()->addDays($daysSinceLoanStart);
+
+                // Most payments are completed, some might be pending
+                $paymentStatus = $i === $numberOfPayments - 1 && $faker->boolean(10) ? 'pending' : 'completed';
+
+                // Generate notes based on context
+                if ($loan->status === 'paid' && $i === $numberOfPayments - 1) {
+                    $notes = 'Pago final - préstamo completamente saldado';
+                } elseif ($paymentStatus === 'pending') {
+                    $notes = 'Pago pendiente de confirmación';
+                } else {
+                    $notes = $faker->randomElement([
+                        'Pago parcial realizado',
+                        'Cuota abonada correctamente',
+                        'Pago recibido',
+                    ]);
+                }
+
+                Payment::create([
+                    'payment_number' => 'P-' . $paymentDate->format('Ymd') . '-' . str_pad($paymentCounter++, 4, '0', STR_PAD_LEFT),
+                    'loan_id' => $loan->id,
+                    'amount' => $paymentAmount,
+                    'payment_method' => $faker->randomElement($paymentMethods),
+                    'payment_date' => $paymentDate,
+                    'status' => $paymentStatus,
+                    'notes' => $notes,
+                    'branch_id' => $loan->branch_id, // Use loan's branch
+                ]);
+
+                $paymentsCreated++;
+            }
+        }
     }
 }
