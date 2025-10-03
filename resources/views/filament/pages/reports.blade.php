@@ -1,13 +1,13 @@
 <x-filament-panels::page>
     <div class="space-y-6">
-        {{-- Date Range Form --}}
+        {{-- Filters Form --}}
         <x-filament::section>
             <x-slot name="heading">
-                Rango de Fechas
+                Filtros de Reporte
             </x-slot>
 
             <x-slot name="description">
-                Seleccione el rango de fechas para los reportes que lo requieran
+                Seleccione el rango de fechas y sucursal para los reportes
             </x-slot>
 
             <form wire:submit.prevent="submit">
@@ -152,6 +152,64 @@
 
                 <x-filament::button
                     wire:click="generateInventoryReport('excel')"
+                    icon="heroicon-o-table-cells"
+                    color="success"
+                >
+                    Exportar Excel
+                </x-filament::button>
+            </div>
+        </x-filament::section>
+
+        {{-- Revenue by Branch Report --}}
+        <x-filament::section>
+            <x-slot name="heading">
+                Ingresos por Sucursal
+            </x-slot>
+
+            <x-slot name="description">
+                Análisis de ingresos desglosado por sucursal
+            </x-slot>
+
+            <div class="flex gap-4">
+                <x-filament::button
+                    wire:click="generateRevenueByBranchReport('pdf')"
+                    icon="heroicon-o-document-arrow-down"
+                    color="danger"
+                >
+                    Exportar PDF
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="generateRevenueByBranchReport('excel')"
+                    icon="heroicon-o-table-cells"
+                    color="success"
+                >
+                    Exportar Excel
+                </x-filament::button>
+            </div>
+        </x-filament::section>
+
+        {{-- Customer Analytics Report --}}
+        <x-filament::section>
+            <x-slot name="heading">
+                Análisis de Clientes
+            </x-slot>
+
+            <x-slot name="description">
+                Top 50 clientes por volumen de negocio en el período seleccionado
+            </x-slot>
+
+            <div class="flex gap-4">
+                <x-filament::button
+                    wire:click="generateCustomerAnalyticsReport('pdf')"
+                    icon="heroicon-o-document-arrow-down"
+                    color="danger"
+                >
+                    Exportar PDF
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="generateCustomerAnalyticsReport('excel')"
                     icon="heroicon-o-table-cells"
                     color="success"
                 >

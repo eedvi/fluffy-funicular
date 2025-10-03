@@ -272,12 +272,12 @@ class LoanResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
 
-                // Imprimir Contrato
-                Tables\Actions\Action::make('imprimir_contrato')
-                    ->label('Imprimir Contrato')
+                // Imprimir Recibo
+                Tables\Actions\Action::make('imprimir_recibo')
+                    ->label('Imprimir Recibo')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
-                    ->url(fn (Loan $record): string => route('pdf.loan-contract', $record))
+                    ->url(fn (Loan $record): string => route('pdf.loan-receipt', $record))
                     ->openUrlInNewTab(),
 
                 // Renovar Préstamo
@@ -522,6 +522,8 @@ class LoanResource extends Resource
     {
         return [
             RelationManagers\PaymentsRelationManager::class,
+            RelationManagers\TransactionHistoryRelationManager::class,
+
         ];
     }
 
@@ -530,6 +532,7 @@ class LoanResource extends Resource
         return [
             'index' => Pages\ListLoans::route('/'),
             'create' => Pages\CreateLoan::route('/create'),
+            'view' => Pages\ViewLoan::route('/{record}'),
             'edit' => Pages\EditLoan::route('/{record}/edit'),
         ];
     }

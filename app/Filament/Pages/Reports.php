@@ -2,12 +2,15 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\Item;
 use App\Models\Loan;
 use App\Models\Payment;
 use App\Models\Sale;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -37,6 +40,7 @@ class Reports extends Page implements HasForms
         $this->form->fill([
             'date_from' => now()->startOfMonth(),
             'date_to' => now()->endOfMonth(),
+            'branch_id' => null, // All branches
         ]);
     }
 
@@ -44,8 +48,8 @@ class Reports extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Rango de Fechas')
-                    ->description('Seleccione el rango de fechas para los reportes')
+                Section::make('Filtros de Reporte')
+                    ->description('Seleccione el rango de fechas y sucursal para los reportes')
                     ->schema([
                         DatePicker::make('date_from')
                             ->label('Desde')
@@ -57,18 +61,30 @@ class Reports extends Page implements HasForms
                             ->default(now()->endOfMonth())
                             ->displayFormat('d/m/Y')
                             ->required(),
+                        Select::make('branch_id')
+                            ->label('Sucursal')
+                            ->options(fn () => [null => 'Todas las Sucursales'] + Branch::pluck('name', 'id')->toArray())
+                            ->default(null)
+                            ->searchable(),
                     ])
-                    ->columns(2),
+                    ->columns(3),
             ])
             ->statePath('data');
     }
 
     public function generateActiveLoansReport(string $format = 'pdf')
     {
-        $loans = Loan::where('status', 'active')
-            ->with(['customer', 'item'])
-            ->orderBy('due_date', 'asc')
-            ->get();
+        $formData = $this->form->getState();
+        $branchId = $formData['branch_id'];
+
+        $query = Loan::where('status', 'active')
+            ->with(['customer', 'item', 'branch']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $loans = $query->orderBy('due_date', 'asc')->get();
 
         if ($format === 'pdf') {
             $pdf = Pdf::loadView('reports.active-loans', compact('loans'));
@@ -104,11 +120,18 @@ class Reports extends Page implements HasForms
 
     public function generateOverdueLoansReport(string $format = 'pdf')
     {
-        $loans = Loan::whereIn('status', ['active', 'overdue'])
+        $formData = $this->form->getState();
+        $branchId = $formData['branch_id'];
+
+        $query = Loan::whereIn('status', ['active', 'overdue'])
             ->where('due_date', '<', now())
-            ->with(['customer', 'item'])
-            ->orderBy('due_date', 'asc')
-            ->get();
+            ->with(['customer', 'item', 'branch']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $loans = $query->orderBy('due_date', 'asc')->get();
 
         if ($format === 'pdf') {
             $pdf = Pdf::loadView('reports.overdue-loans', compact('loans'));
@@ -148,11 +171,16 @@ class Reports extends Page implements HasForms
         $formData = $this->form->getState();
         $dateFrom = $formData['date_from'];
         $dateTo = $formData['date_to'];
+        $branchId = $formData['branch_id'];
 
-        $sales = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
-            ->with(['customer', 'item'])
-            ->orderBy('sale_date', 'desc')
-            ->get();
+        $query = Sale::whereBetween('sale_date', [$dateFrom, $dateTo])
+            ->with(['customer', 'item', 'branch']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $sales = $query->orderBy('sale_date', 'desc')->get();
 
         $totalSales = $sales->sum('final_price');
         $totalDiscount = $sales->sum('discount');
@@ -195,12 +223,17 @@ class Reports extends Page implements HasForms
         $formData = $this->form->getState();
         $dateFrom = $formData['date_from'];
         $dateTo = $formData['date_to'];
+        $branchId = $formData['branch_id'];
 
-        $payments = Payment::whereBetween('payment_date', [$dateFrom, $dateTo])
+        $query = Payment::whereBetween('payment_date', [$dateFrom, $dateTo])
             ->where('status', 'completed')
-            ->with(['loan.customer'])
-            ->orderBy('payment_date', 'desc')
-            ->get();
+            ->with(['loan.customer', 'branch']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $payments = $query->orderBy('payment_date', 'desc')->get();
 
         $totalPayments = $payments->sum('amount');
 
@@ -237,10 +270,17 @@ class Reports extends Page implements HasForms
 
     public function generateInventoryReport(string $format = 'pdf')
     {
-        $items = Item::whereIn('status', ['available', 'collateral', 'forfeited'])
-            ->orderBy('category')
-            ->orderBy('name')
-            ->get();
+        $formData = $this->form->getState();
+        $branchId = $formData['branch_id'];
+
+        $query = Item::whereIn('status', ['available', 'collateral', 'forfeited'])
+            ->with(['branch']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $items = $query->orderBy('category')->orderBy('name')->get();
 
         $totalValue = $items->sum('appraised_value');
         $totalMarketValue = $items->sum('market_value');
@@ -280,6 +320,152 @@ class Reports extends Page implements HasForms
                     }
                 },
                 'inventario-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+    }
+
+    public function generateRevenueByBranchReport(string $format = 'pdf')
+    {
+        $formData = $this->form->getState();
+        $dateFrom = $formData['date_from'];
+        $dateTo = $formData['date_to'];
+
+        $branches = Branch::with([
+            'loans' => fn($q) => $q->whereBetween('start_date', [$dateFrom, $dateTo]),
+            'payments' => fn($q) => $q->whereBetween('payment_date', [$dateFrom, $dateTo])->where('status', 'completed'),
+            'sales' => fn($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo])->where('status', 'delivered'),
+        ])->get();
+
+        $revenueData = $branches->map(function ($branch) {
+            $loansRevenue = $branch->loans->sum('interest_amount');
+            $salesRevenue = $branch->sales->sum('final_price');
+            $paymentsReceived = $branch->payments->sum('amount');
+
+            return [
+                'branch' => $branch,
+                'loans_issued' => $branch->loans->count(),
+                'loans_revenue' => $loansRevenue,
+                'sales_count' => $branch->sales->count(),
+                'sales_revenue' => $salesRevenue,
+                'payments_received' => $paymentsReceived,
+                'total_revenue' => $loansRevenue + $salesRevenue,
+            ];
+        });
+
+        $totals = [
+            'loans_issued' => $revenueData->sum('loans_issued'),
+            'loans_revenue' => $revenueData->sum('loans_revenue'),
+            'sales_count' => $revenueData->sum('sales_count'),
+            'sales_revenue' => $revenueData->sum('sales_revenue'),
+            'payments_received' => $revenueData->sum('payments_received'),
+            'total_revenue' => $revenueData->sum('total_revenue'),
+        ];
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('reports.revenue-by-branch', compact('revenueData', 'totals', 'dateFrom', 'dateTo'));
+            return response()->streamDownload(
+                fn () => print($pdf->output()),
+                'ingresos-por-sucursal-' . now()->format('Y-m-d') . '.pdf'
+            );
+        } else {
+            return Excel::download(
+                new class($revenueData) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings {
+                    public function __construct(private Collection $data) {}
+
+                    public function collection() {
+                        return $this->data->map(fn($item) => [
+                            'Sucursal' => $item['branch']->name,
+                            'Préstamos Emitidos' => $item['loans_issued'],
+                            'Ingresos por Intereses' => $item['loans_revenue'],
+                            'Ventas Realizadas' => $item['sales_count'],
+                            'Ingresos por Ventas' => $item['sales_revenue'],
+                            'Pagos Recibidos' => $item['payments_received'],
+                            'Ingresos Totales' => $item['total_revenue'],
+                        ]);
+                    }
+
+                    public function headings(): array {
+                        return ['Sucursal', 'Préstamos Emitidos', 'Ingresos por Intereses', 'Ventas Realizadas', 'Ingresos por Ventas', 'Pagos Recibidos', 'Ingresos Totales'];
+                    }
+                },
+                'ingresos-por-sucursal-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+    }
+
+    public function generateCustomerAnalyticsReport(string $format = 'pdf')
+    {
+        $formData = $this->form->getState();
+        $dateFrom = $formData['date_from'];
+        $dateTo = $formData['date_to'];
+        $branchId = $formData['branch_id'];
+
+        $query = Customer::with([
+            'loans' => fn($q) => $q->whereBetween('start_date', [$dateFrom, $dateTo]),
+            'sales' => fn($q) => $q->whereBetween('sale_date', [$dateFrom, $dateTo]),
+        ]);
+
+        if ($branchId) {
+            $query->whereHas('loans', fn($q) => $q->where('branch_id', $branchId));
+        }
+
+        $customers = $query->get();
+
+        $customerData = $customers->map(function ($customer) {
+            $totalBorrowed = $customer->loans->sum('loan_amount');
+            $totalPurchased = $customer->sales->sum('final_price');
+            $activeLoans = $customer->loans->where('status', 'active')->count();
+            $paidLoans = $customer->loans->where('status', 'paid')->count();
+
+            return [
+                'customer' => $customer,
+                'total_loans' => $customer->loans->count(),
+                'active_loans' => $activeLoans,
+                'paid_loans' => $paidLoans,
+                'total_borrowed' => $totalBorrowed,
+                'total_purchased' => $totalPurchased,
+                'total_business' => $totalBorrowed + $totalPurchased,
+            ];
+        })->sortByDesc('total_business')->take(50); // Top 50 customers
+
+        $totals = [
+            'total_customers' => $customerData->count(),
+            'total_loans' => $customerData->sum('total_loans'),
+            'total_borrowed' => $customerData->sum('total_borrowed'),
+            'total_purchased' => $customerData->sum('total_purchased'),
+            'total_business' => $customerData->sum('total_business'),
+        ];
+
+        if ($format === 'pdf') {
+            $pdf = Pdf::loadView('reports.customer-analytics', compact('customerData', 'totals', 'dateFrom', 'dateTo'));
+            return response()->streamDownload(
+                fn () => print($pdf->output()),
+                'analisis-clientes-' . now()->format('Y-m-d') . '.pdf'
+            );
+        } else {
+            return Excel::download(
+                new class($customerData) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings {
+                    public function __construct(private Collection $data) {}
+
+                    public function collection() {
+                        return $this->data->map(fn($item) => [
+                            'Cliente' => $item['customer']->full_name,
+                            'DNI' => $item['customer']->dni,
+                            'Teléfono' => $item['customer']->phone,
+                            'Total Préstamos' => $item['total_loans'],
+                            'Préstamos Activos' => $item['active_loans'],
+                            'Préstamos Pagados' => $item['paid_loans'],
+                            'Total Prestado' => $item['total_borrowed'],
+                            'Total Comprado' => $item['total_purchased'],
+                            'Volumen Total' => $item['total_business'],
+                        ]);
+                    }
+
+                    public function headings(): array {
+                        return ['Cliente', 'DNI', 'Teléfono', 'Total Préstamos', 'Préstamos Activos', 'Préstamos Pagados', 'Total Prestado', 'Total Comprado', 'Volumen Total'];
+                    }
+                },
+                'analisis-clientes-' . now()->format('Y-m-d') . '.xlsx'
             );
         }
     }
