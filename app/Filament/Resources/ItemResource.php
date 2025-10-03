@@ -72,6 +72,13 @@ class ItemResource extends Resource
                                 Forms\Components\TextInput::make('location')
                                     ->label('Ubicación')
                                     ->maxLength(100),
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal donde se registra el artículo'),
                             ]),
                         Forms\Components\Textarea::make('description')
                             ->label('Descripción')
@@ -150,6 +157,12 @@ class ItemResource extends Resource
                     ->label('Nombre')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('category')
                     ->label('Categoría')
                     ->searchable()
@@ -193,6 +206,11 @@ class ItemResource extends Resource
                     ->toggleable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 TrashedFilter::make(),
             ])
             ->actions([

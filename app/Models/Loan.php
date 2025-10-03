@@ -31,6 +31,7 @@ class Loan extends Model
         'paid_date',
         'forfeited_date',
         'notes',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -56,6 +57,11 @@ class Loan extends Model
     }
 
     // Relationships
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);

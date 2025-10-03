@@ -60,6 +60,13 @@ class LoanResource extends Resource
                                     ->searchable()
                                     ->required()
                                     ->preload(),
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal donde se registra el préstamo'),
                             ]),
                     ]),
 
@@ -213,6 +220,12 @@ class LoanResource extends Resource
                     ->label('Cliente')
                     ->searchable(['first_name', 'last_name'])
                     ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('item.name')
                     ->label('Artículo')
                     ->searchable()
@@ -248,6 +261,11 @@ class LoanResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 TrashedFilter::make(),
             ])
             ->actions([

@@ -25,6 +25,7 @@ class Sale extends Model
         'status',
         'delivery_date',
         'notes',
+        'branch_id',
     ];
 
     protected $casts = [
@@ -44,6 +45,11 @@ class Sale extends Model
     }
 
     // Relationships
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);

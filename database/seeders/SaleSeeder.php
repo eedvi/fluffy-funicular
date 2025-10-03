@@ -5,6 +5,9 @@ namespace Database\Seeders;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Sale;
+use App\Models\Customer;
+use App\Models\Item;
+use Faker\Factory as Faker;
 
 class SaleSeeder extends Seeder
 {
@@ -13,74 +16,95 @@ class SaleSeeder extends Seeder
      */
     public function run(): void
     {
+        $faker = Faker::create();
+
+        // Get available items and customers
+        $availableItems = Item::where('status', 'available')->get();
+        $customers = Customer::all();
+
+        if ($availableItems->isEmpty()) {
+            $this->command->warn('No items available to create sales.');
+            return;
+        }
+
         $saleCounter = 1;
+        $paymentMethods = ['cash', 'card', 'transfer'];
+        $statuses = ['pending', 'delivered', 'cancelled'];
+        $usedItems = [];
 
-        // Sale 1: Completed sale with customer - Item 6
-        $sale1Price = 45000.00;
-        $sale1Discount = 5000.00;
+        // Create sales (up to available items count)
+        $saleCount = min(10, $availableItems->count());
 
-        Sale::create([
-            'sale_number' => 'S-' . now()->format('Ymd') . '-' . str_pad($saleCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 1, // Customer associated with sale
-            'item_id' => 6,
-            'sale_price' => $sale1Price,
-            'discount' => $sale1Discount,
-            'final_price' => $sale1Price - $sale1Discount, // 40,000
-            'payment_method' => 'cash',
-            'sale_date' => now()->subDays(3),
-            'status' => 'delivered',
-            'notes' => 'Venta completada con descuento por pago en efectivo',
-        ]);
+        for ($i = 0; $i < $saleCount; $i++) {
+            // Get an item that hasn't been used yet
+            $remainingItems = $availableItems->reject(fn($item) => in_array($item->id, $usedItems));
+            if ($remainingItems->isEmpty()) {
+                break;
+            }
+            $item = $remainingItems->random();
+            $usedItems[] = $item->id;
 
-        // Sale 2: Completed sale without customer - Item 7
-        $sale2Price = 28000.00;
-        $sale2Discount = 0.00;
+            $status = $faker->randomElement($statuses);
 
-        Sale::create([
-            'sale_number' => 'S-' . now()->format('Ymd') . '-' . str_pad($saleCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => null, // No customer associated
-            'item_id' => 7,
-            'sale_price' => $sale2Price,
-            'discount' => $sale2Discount,
-            'final_price' => $sale2Price - $sale2Discount, // 28,000
-            'payment_method' => 'card',
-            'sale_date' => now()->subDays(8),
-            'status' => 'delivered',
-            'notes' => 'Venta a cliente sin registro',
-        ]);
+            // 60% chance of having a customer associated
+            $customer = $faker->boolean(60) && !$customers->isEmpty() ? $faker->randomElement($customers) : null;
 
-        // Sale 3: Pending sale with customer - Item 8
-        $sale3Price = 35000.00;
-        $sale3Discount = 2000.00;
+            // Calculate sale date based on status
+            switch ($status) {
+                case 'pending':
+                    $saleDate = now()->subDays($faker->numberBetween(0, 3));
+                    break;
+                case 'delivered':
+                    $saleDate = now()->subDays($faker->numberBetween(1, 45));
+                    break;
+                case 'cancelled':
+                    $saleDate = now()->subDays($faker->numberBetween(5, 30));
+                    break;
+            }
 
-        Sale::create([
-            'sale_number' => 'S-' . now()->format('Ymd') . '-' . str_pad($saleCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => 3, // Customer associated with sale
-            'item_id' => 8,
-            'sale_price' => $sale3Price,
-            'discount' => $sale3Discount,
-            'final_price' => $sale3Price - $sale3Discount, // 33,000
-            'payment_method' => 'transfer',
-            'sale_date' => now(),
-            'status' => 'pending',
-            'notes' => 'Venta pendiente de confirmación de transferencia',
-        ]);
+            // Sale price is typically market value or slightly above
+            $salePrice = round($item->market_value * $faker->randomFloat(2, 0.95, 1.15), -2);
 
-        // Sale 4: Completed sale without customer and discount - Item 9
-        $sale4Price = 52000.00;
-        $sale4Discount = 7000.00;
+            // 50% chance of discount, if any, 5-20% of sale price
+            $discount = $faker->boolean(50) ? round($salePrice * $faker->randomFloat(2, 0.05, 0.20), -2) : 0;
+            $finalPrice = $salePrice - $discount;
 
-        Sale::create([
-            'sale_number' => 'S-' . now()->format('Ymd') . '-' . str_pad($saleCounter++, 4, '0', STR_PAD_LEFT),
-            'customer_id' => null, // No customer associated
-            'item_id' => 9,
-            'sale_price' => $sale4Price,
-            'discount' => $sale4Discount,
-            'final_price' => $sale4Price - $sale4Discount, // 45,000
-            'payment_method' => 'cash',
-            'sale_date' => now()->subDays(15),
-            'status' => 'delivered',
-            'notes' => 'Venta completada con descuento especial',
-        ]);
+            // Payment method preferences
+            $paymentMethod = $faker->randomElement($paymentMethods);
+
+            // Generate notes based on status and conditions
+            if ($status === 'delivered') {
+                if ($discount > 0) {
+                    $notes = 'Venta completada con descuento';
+                } else {
+                    $notes = 'Venta completada sin descuento';
+                }
+                if ($customer) {
+                    $notes .= ' a cliente registrado';
+                }
+            } elseif ($status === 'pending') {
+                $notes = match($paymentMethod) {
+                    'transfer' => 'Venta pendiente de confirmación de transferencia',
+                    'card' => 'Venta pendiente de confirmación de pago con tarjeta',
+                    'cash' => 'Venta pendiente de retiro',
+                };
+            } else { // cancelled
+                $notes = 'Venta cancelada por el cliente';
+            }
+
+            Sale::create([
+                'sale_number' => 'S-' . $saleDate->format('Ymd') . '-' . str_pad($saleCounter++, 4, '0', STR_PAD_LEFT),
+                'customer_id' => $customer?->id,
+                'item_id' => $item->id,
+                'sale_price' => $salePrice,
+                'discount' => $discount,
+                'final_price' => $finalPrice,
+                'payment_method' => $paymentMethod,
+                'sale_date' => $saleDate,
+                'status' => $status,
+                'notes' => $notes,
+                'branch_id' => $item->branch_id, // Use item's branch
+            ]);
+        }
     }
 }

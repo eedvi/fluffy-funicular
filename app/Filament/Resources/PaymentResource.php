@@ -51,6 +51,13 @@ class PaymentResource extends Resource
                                     ->searchable(['loan_number'])
                                     ->required()
                                     ->preload(),
+                                Forms\Components\Select::make('branch_id')
+                                    ->label('Sucursal')
+                                    ->relationship('branch', 'name')
+                                    ->preload()
+                                    ->required()
+                                    ->searchable()
+                                    ->helperText('Sucursal donde se registra el pago'),
                             ]),
                     ]),
 
@@ -122,6 +129,12 @@ class PaymentResource extends Resource
                     ->label('Número')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('branch.name')
+                    ->label('Sucursal')
+                    ->badge()
+                    ->color('info')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('loan.loan_number')
                     ->label('Préstamo')
                     ->searchable()
@@ -162,6 +175,11 @@ class PaymentResource extends Resource
                     }),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('branch_id')
+                    ->label('Sucursal')
+                    ->relationship('branch', 'name')
+                    ->preload()
+                    ->searchable(),
                 TrashedFilter::make(),
             ])
             ->actions([

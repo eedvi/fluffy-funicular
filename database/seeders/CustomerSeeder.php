@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Customer;
+use App\Models\Branch;
+use Faker\Factory as Faker;
 
 class CustomerSeeder extends Seeder
 {
@@ -12,76 +15,74 @@ class CustomerSeeder extends Seeder
      */
     public function run(): void
     {
-        $customers = [
-            [
-                'first_name' => 'Juan',
-                'last_name' => 'Pérez',
-                'gender' => 'male',
-                'date_of_birth' => '1985-05-15',
-                'identity_type' => 'dni',
-                'identity_number' => '35123456',
-                'address' => 'Av. Corrientes 1234',
-                'city' => 'Buenos Aires',
-                'state' => 'CABA',
-                'postal_code' => '1043',
-                'country' => 'Argentina',
-                'phone' => '011-4567-8901',
-                'mobile' => '11-2345-6789',
-                'email' => 'juan.perez@email.com',
-                'occupation' => 'Comerciante',
-                'monthly_income' => 150000,
-                'credit_limit' => 50000,
-                'credit_score' => 750,
-                'is_active' => true,
-                'registration_date' => now()->subMonths(6),
-            ],
-            [
-                'first_name' => 'María',
-                'last_name' => 'González',
-                'gender' => 'female',
-                'date_of_birth' => '1990-08-22',
-                'identity_type' => 'dni',
-                'identity_number' => '38456789',
-                'address' => 'Calle San Martín 567',
-                'city' => 'Córdoba',
-                'state' => 'Córdoba',
-                'postal_code' => '5000',
-                'country' => 'Argentina',
-                'phone' => '0351-456-7890',
-                'mobile' => '351-234-5678',
-                'email' => 'maria.gonzalez@email.com',
-                'occupation' => 'Empleada',
-                'monthly_income' => 120000,
-                'credit_limit' => 30000,
-                'credit_score' => 680,
-                'is_active' => true,
-                'registration_date' => now()->subMonths(4),
-            ],
-            [
-                'first_name' => 'Carlos',
-                'last_name' => 'Rodríguez',
-                'gender' => 'male',
-                'date_of_birth' => '1978-12-10',
-                'identity_type' => 'dni',
-                'identity_number' => '28789012',
-                'address' => 'Av. Libertador 890',
-                'city' => 'Rosario',
-                'state' => 'Santa Fe',
-                'postal_code' => '2000',
-                'country' => 'Argentina',
-                'mobile' => '341-567-8901',
-                'email' => 'carlos.rodriguez@email.com',
-                'occupation' => 'Independiente',
-                'monthly_income' => 180000,
-                'credit_limit' => 70000,
-                'credit_score' => 820,
-                'is_active' => true,
-                'registration_date' => now()->subMonths(8),
-            ],
+        $faker = Faker::create('es_AR');
+
+        // Get all branches
+        $branches = Branch::all()->pluck('id')->toArray();
+
+        // Argentine cities and their states
+        $cities = [
+            ['city' => 'Buenos Aires', 'state' => 'CABA', 'postal_code' => '1000'],
+            ['city' => 'Córdoba', 'state' => 'Córdoba', 'postal_code' => '5000'],
+            ['city' => 'Rosario', 'state' => 'Santa Fe', 'postal_code' => '2000'],
+            ['city' => 'Mendoza', 'state' => 'Mendoza', 'postal_code' => '5500'],
+            ['city' => 'La Plata', 'state' => 'Buenos Aires', 'postal_code' => '1900'],
         ];
 
-        foreach ($customers as $customer) {
-            \App\Models\Customer::create($customer);
+        // Occupations
+        $occupations = [
+            'Comerciante',
+            'Empleado/a',
+            'Independiente',
+            'Profesional',
+            'Docente',
+            'Técnico/a',
+        ];
+
+        // Create 20 customers
+        for ($i = 0; $i < 20; $i++) {
+            $gender = $faker->randomElement(['male', 'female']);
+            $cityData = $faker->randomElement($cities);
+            $dateOfBirth = $faker->dateTimeBetween('-65 years', '-18 years');
+
+            // Generate DNI based on age (older people have lower DNI numbers)
+            $age = date('Y') - $dateOfBirth->format('Y');
+            if ($age > 50) {
+                $dniPrefix = $faker->numberBetween(10, 25);
+            } elseif ($age > 35) {
+                $dniPrefix = $faker->numberBetween(25, 35);
+            } else {
+                $dniPrefix = $faker->numberBetween(35, 45);
+            }
+            $dni = $dniPrefix . $faker->numerify('######');
+
+            $monthlyIncome = $faker->numberBetween(80000, 500000);
+            $creditLimit = round($monthlyIncome * $faker->randomFloat(2, 0.2, 0.5), -3);
+            $creditScore = $faker->numberBetween(550, 900);
+
+            Customer::create([
+                'first_name' => $gender === 'male' ? $faker->firstNameMale : $faker->firstNameFemale,
+                'last_name' => $faker->lastName,
+                'gender' => $gender,
+                'date_of_birth' => $dateOfBirth->format('Y-m-d'),
+                'identity_type' => 'dni',
+                'identity_number' => $dni,
+                'address' => $faker->streetAddress,
+                'city' => $cityData['city'],
+                'state' => $cityData['state'],
+                'postal_code' => $cityData['postal_code'],
+                'country' => 'Argentina',
+                'phone' => $faker->optional(0.6)->phoneNumber,
+                'mobile' => $faker->phoneNumber,
+                'email' => $faker->optional(0.7)->email,
+                'occupation' => $faker->randomElement($occupations),
+                'monthly_income' => $monthlyIncome,
+                'credit_limit' => $creditLimit,
+                'credit_score' => $creditScore,
+                'is_active' => $faker->boolean(95),
+                'registration_date' => $faker->dateTimeBetween('-2 years', 'now'),
+                'branch_id' => $faker->randomElement($branches),
+            ]);
         }
     }
 }

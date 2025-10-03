@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Item;
+use App\Models\Branch;
+use Faker\Factory as Faker;
 
 class ItemSeeder extends Seeder
 {
@@ -12,137 +15,101 @@ class ItemSeeder extends Seeder
      */
     public function run(): void
     {
-        $items = [
+        $faker = Faker::create();
+
+        // Get all branches
+        $branches = Branch::all()->pluck('id')->toArray();
+
+        // Define items by category with realistic brands
+        $itemsData = [
             // Joyería
             [
-                'name' => 'Anillo de Oro 18K con Diamante',
                 'category' => 'Joyería',
-                'description' => 'Anillo de oro 18 kilates con diamante de 0.5 quilates',
-                'condition' => 'excellent',
-                'brand' => 'Tiffany & Co.',
-                'appraised_value' => 85000,
-                'market_value' => 95000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(10),
+                'items' => [
+                    ['name' => 'Anillo de Oro 18K', 'brands' => ['Tiffany & Co.', 'Cartier', 'Bulgari', 'Van Cleef'], 'value_range' => [80000, 200000]],
+                    ['name' => 'Collar de Perlas', 'brands' => ['Mikimoto', 'Tiffany & Co.', null], 'value_range' => [35000, 120000]],
+                    ['name' => 'Reloj de Lujo', 'brands' => ['Rolex', 'Omega', 'Tag Heuer', 'Breitling', 'Patek Philippe'], 'value_range' => [250000, 800000]],
+                    ['name' => 'Pulsera de Oro', 'brands' => ['Cartier', 'Bulgari', null], 'value_range' => [45000, 150000]],
+                    ['name' => 'Aros de Diamantes', 'brands' => ['Tiffany & Co.', 'Cartier', null], 'value_range' => [60000, 180000]],
+                ],
             ],
-            [
-                'name' => 'Collar de Perlas Naturales',
-                'category' => 'Joyería',
-                'description' => 'Collar de perlas naturales cultivadas de 8mm',
-                'condition' => 'good',
-                'appraised_value' => 35000,
-                'market_value' => 42000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(5),
-            ],
-            [
-                'name' => 'Reloj Rolex Submariner',
-                'category' => 'Joyería',
-                'description' => 'Reloj Rolex Submariner acero inoxidable',
-                'condition' => 'excellent',
-                'brand' => 'Rolex',
-                'model' => 'Submariner 116610LN',
-                'serial_number' => 'Z891234',
-                'appraised_value' => 450000,
-                'market_value' => 520000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(15),
-            ],
-
             // Electrónica
             [
-                'name' => 'iPhone 15 Pro Max 256GB',
                 'category' => 'Electrónica',
-                'description' => 'iPhone 15 Pro Max color titanio natural',
-                'condition' => 'excellent',
-                'brand' => 'Apple',
-                'model' => 'iPhone 15 Pro Max',
-                'serial_number' => 'FMDN1234ABC',
-                'appraised_value' => 650000,
-                'market_value' => 720000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(3),
+                'items' => [
+                    ['name' => 'iPhone', 'brands' => ['Apple'], 'models' => ['iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 14 Pro'], 'value_range' => [500000, 850000]],
+                    ['name' => 'MacBook', 'brands' => ['Apple'], 'models' => ['MacBook Pro M3 14"', 'MacBook Air M2', 'MacBook Pro M3 16"'], 'value_range' => [800000, 1800000]],
+                    ['name' => 'PlayStation', 'brands' => ['Sony'], 'models' => ['PlayStation 5', 'PlayStation 5 Digital'], 'value_range' => [280000, 380000]],
+                    ['name' => 'Samsung Galaxy', 'brands' => ['Samsung'], 'models' => ['S24 Ultra', 'S23 Ultra', 'Z Fold 5'], 'value_range' => [450000, 750000]],
+                    ['name' => 'Tablet iPad', 'brands' => ['Apple'], 'models' => ['iPad Pro 12.9"', 'iPad Air', 'iPad Pro 11"'], 'value_range' => [400000, 900000]],
+                    ['name' => 'Smart TV', 'brands' => ['Samsung', 'LG', 'Sony'], 'models' => ['OLED 55"', 'QLED 65"', '4K 50"'], 'value_range' => [300000, 800000]],
+                ],
             ],
-            [
-                'name' => 'MacBook Pro M3 14"',
-                'category' => 'Electrónica',
-                'description' => 'MacBook Pro 14 pulgadas con chip M3 Pro, 18GB RAM, 512GB SSD',
-                'condition' => 'excellent',
-                'brand' => 'Apple',
-                'model' => 'MacBook Pro 14" M3',
-                'serial_number' => 'C02YN1234567',
-                'appraised_value' => 1200000,
-                'market_value' => 1400000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(7),
-            ],
-            [
-                'name' => 'PlayStation 5',
-                'category' => 'Electrónica',
-                'description' => 'Consola PlayStation 5 con lector de discos',
-                'condition' => 'good',
-                'brand' => 'Sony',
-                'model' => 'CFI-1215A',
-                'appraised_value' => 280000,
-                'market_value' => 320000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(20),
-            ],
-
             // Herramientas
             [
-                'name' => 'Taladro Percutor Dewalt',
                 'category' => 'Herramientas',
-                'description' => 'Taladro percutor inalámbrico 20V con 2 baterías',
-                'condition' => 'good',
-                'brand' => 'Dewalt',
-                'model' => 'DCD996',
-                'appraised_value' => 45000,
-                'market_value' => 55000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(12),
+                'items' => [
+                    ['name' => 'Taladro Percutor', 'brands' => ['Dewalt', 'Bosch', 'Makita', 'Milwaukee'], 'value_range' => [40000, 80000]],
+                    ['name' => 'Soldadora Inverter', 'brands' => ['Lincoln', 'Miller', 'Esab'], 'value_range' => [100000, 180000]],
+                    ['name' => 'Amoladora Angular', 'brands' => ['Bosch', 'Dewalt', 'Makita'], 'value_range' => [35000, 70000]],
+                    ['name' => 'Compresor de Aire', 'brands' => ['Stanley', 'California Air Tools', 'Schulz'], 'value_range' => [80000, 150000]],
+                    ['name' => 'Set de Herramientas', 'brands' => ['Stanley', 'Craftsman', 'Milwaukee'], 'value_range' => [50000, 120000]],
+                ],
             ],
-            [
-                'name' => 'Soldadora Inverter',
-                'category' => 'Herramientas',
-                'description' => 'Soldadora inverter 200A profesional',
-                'condition' => 'excellent',
-                'brand' => 'Lincoln',
-                'appraised_value' => 120000,
-                'market_value' => 145000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(8),
-            ],
-
             // Otros
             [
-                'name' => 'Bicicleta Mountain Bike',
                 'category' => 'Otros',
-                'description' => 'Bicicleta de montaña rodado 29 con suspensión completa',
-                'condition' => 'good',
-                'brand' => 'Trek',
-                'model' => 'Fuel EX 8',
-                'appraised_value' => 250000,
-                'market_value' => 290000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(6),
-            ],
-            [
-                'name' => 'Guitarra Eléctrica Fender',
-                'category' => 'Otros',
-                'description' => 'Guitarra eléctrica Fender Stratocaster Americana',
-                'condition' => 'excellent',
-                'brand' => 'Fender',
-                'model' => 'American Professional II Stratocaster',
-                'appraised_value' => 180000,
-                'market_value' => 210000,
-                'status' => 'available',
-                'acquired_date' => now()->subDays(4),
+                'items' => [
+                    ['name' => 'Bicicleta Mountain Bike', 'brands' => ['Trek', 'Giant', 'Specialized', 'Cannondale'], 'value_range' => [200000, 450000]],
+                    ['name' => 'Guitarra Eléctrica', 'brands' => ['Fender', 'Gibson', 'Ibanez', 'PRS'], 'value_range' => [150000, 350000]],
+                    ['name' => 'Cámara Digital', 'brands' => ['Canon', 'Nikon', 'Sony'], 'models' => ['EOS R6', 'Z6 II', 'A7 IV'], 'value_range' => [180000, 450000]],
+                    ['name' => 'Consola DJ', 'brands' => ['Pioneer', 'Numark', 'Denon'], 'value_range' => [120000, 300000]],
+                ],
             ],
         ];
 
-        foreach ($items as $item) {
-            \App\Models\Item::create($item);
+        $conditions = ['excellent', 'good', 'fair'];
+        $statuses = ['available', 'on_loan', 'sold'];
+
+        // Create 20 items distributed across categories and branches
+        $itemCount = 0;
+        $targetCount = 20;
+
+        foreach ($itemsData as $categoryData) {
+            foreach ($categoryData['items'] as $itemTemplate) {
+                if ($itemCount >= $targetCount) break 2;
+
+                $brand = $faker->randomElement($itemTemplate['brands']);
+                $model = isset($itemTemplate['models']) ? $faker->randomElement($itemTemplate['models']) : null;
+
+                $appraisedValue = $faker->numberBetween(
+                    $itemTemplate['value_range'][0],
+                    $itemTemplate['value_range'][1]
+                );
+                $marketValue = round($appraisedValue * $faker->randomFloat(2, 1.1, 1.3), -3);
+
+                $description = $itemTemplate['name'];
+                if ($brand) $description .= " marca {$brand}";
+                if ($model) $description .= " modelo {$model}";
+                $description .= ". " . $faker->sentence(6);
+
+                Item::create([
+                    'name' => $itemTemplate['name'] . ($brand ? " {$brand}" : ''),
+                    'category' => $categoryData['category'],
+                    'description' => $description,
+                    'condition' => $faker->randomElement($conditions),
+                    'brand' => $brand,
+                    'model' => $model,
+                    'serial_number' => $faker->optional(0.7)->bothify('??####????'),
+                    'appraised_value' => $appraisedValue,
+                    'market_value' => $marketValue,
+                    'status' => $faker->randomElement($statuses),
+                    'acquired_date' => $faker->dateTimeBetween('-60 days', 'now'),
+                    'branch_id' => $faker->randomElement($branches),
+                ]);
+
+                $itemCount++;
+            }
         }
     }
 }

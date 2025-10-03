@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets;
 
+use App\Models\Branch;
 use App\Models\Payment;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
@@ -11,6 +12,14 @@ class RevenueChartWidget extends ChartWidget
     protected static ?string $heading = 'Ingresos Mensuales';
 
     protected static ?int $sort = 2;
+
+    public ?int $branchFilter = null;
+
+    protected function getFilters(): ?array
+    {
+        $branches = Branch::pluck('name', 'id')->toArray();
+        return [null => 'Todas las sucursales'] + $branches;
+    }
 
     protected function getData(): array
     {
@@ -45,6 +54,7 @@ class RevenueChartWidget extends ChartWidget
             return Payment::where('status', 'Completado')
                 ->whereYear('payment_date', $month->year)
                 ->whereMonth('payment_date', $month->month)
+                ->when($this->branchFilter, fn($query) => $query->whereHas('loan', fn($q) => $q->where('branch_id', $this->branchFilter)))
                 ->sum('amount');
         })->toArray();
 
