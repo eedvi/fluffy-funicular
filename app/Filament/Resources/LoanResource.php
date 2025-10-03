@@ -522,6 +522,8 @@ class LoanResource extends Resource
     {
         return [
             RelationManagers\PaymentsRelationManager::class,
+            RelationManagers\TransactionHistoryRelationManager::class,
+
         ];
     }
 
@@ -530,6 +532,7 @@ class LoanResource extends Resource
         return [
             'index' => Pages\ListLoans::route('/'),
             'create' => Pages\CreateLoan::route('/create'),
+            'view' => Pages\ViewLoan::route('/{record}'),
             'edit' => Pages\EditLoan::route('/{record}/edit'),
         ];
     }
