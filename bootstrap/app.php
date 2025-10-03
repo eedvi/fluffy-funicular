@@ -11,7 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Global middleware
+        $middleware->append(\App\Http\Middleware\ForceHttps::class);
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Trusted proxies configured via TRUSTED_PROXIES env variable
+        // trustProxies() is called automatically by Laravel
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
