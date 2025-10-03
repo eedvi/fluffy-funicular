@@ -232,12 +232,12 @@ class SaleResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
 
-                // Imprimir Factura
-                Tables\Actions\Action::make('imprimir_factura')
-                    ->label('Imprimir Factura')
+                // Imprimir Recibo
+                Tables\Actions\Action::make('imprimir_recibo')
+                    ->label('Imprimir Recibo')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
-                    ->url(fn (Sale $record): string => route('pdf.sale-invoice', $record))
+                    ->url(fn (Sale $record): string => route('pdf.sale-receipt', $record))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([

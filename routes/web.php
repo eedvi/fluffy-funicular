@@ -1,29 +1,23 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Services\PdfService;
-use App\Models\Loan;
-use App\Models\Payment;
-use App\Models\Sale;
+use App\Http\Controllers\PdfController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-// PDF Download Routes
+// PDF Routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/pdf/loan-contract/{loan}', function (Loan $loan) {
-        $pdfService = new PdfService();
-        return $pdfService->generateLoanContract($loan);
-    })->name('pdf.loan-contract');
+    // Loan PDFs
+    Route::get('/pdf/loan-receipt/{loan}', [PdfController::class, 'loanReceipt'])->name('pdf.loan-receipt');
+    Route::get('/pdf/loan-receipt/{loan}/download', [PdfController::class, 'downloadLoanReceipt'])->name('pdf.loan-receipt.download');
 
-    Route::get('/pdf/payment-receipt/{payment}', function (Payment $payment) {
-        $pdfService = new PdfService();
-        return $pdfService->generatePaymentReceipt($payment);
-    })->name('pdf.payment-receipt');
+    // Payment PDFs
+    Route::get('/pdf/payment-receipt/{payment}', [PdfController::class, 'paymentReceipt'])->name('pdf.payment-receipt');
+    Route::get('/pdf/payment-receipt/{payment}/download', [PdfController::class, 'downloadPaymentReceipt'])->name('pdf.payment-receipt.download');
 
-    Route::get('/pdf/sale-invoice/{sale}', function (Sale $sale) {
-        $pdfService = new PdfService();
-        return $pdfService->generateSaleInvoice($sale);
-    })->name('pdf.sale-invoice');
+    // Sale PDFs
+    Route::get('/pdf/sale-receipt/{sale}', [PdfController::class, 'saleReceipt'])->name('pdf.sale-receipt');
+    Route::get('/pdf/sale-receipt/{sale}/download', [PdfController::class, 'downloadSaleReceipt'])->name('pdf.sale-receipt.download');
 });
