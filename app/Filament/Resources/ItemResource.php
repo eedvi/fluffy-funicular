@@ -211,6 +211,24 @@ class ItemResource extends Resource
                     ->relationship('branch', 'name')
                     ->preload()
                     ->searchable(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->label('Estado')
+                    ->options([
+                        'Disponible' => 'Disponible',
+                        'En Préstamo' => 'En Préstamo',
+                        'Vendido' => 'Vendido',
+                        'Confiscado' => 'Confiscado',
+                    ])
+                    ->multiple(),
+                Tables\Filters\SelectFilter::make('category')
+                    ->label('Categoría')
+                    ->options([
+                        'Joyería' => 'Joyería',
+                        'Electrónica' => 'Electrónica',
+                        'Herramientas' => 'Herramientas',
+                        'Otros' => 'Otros',
+                    ])
+                    ->multiple(),
                 TrashedFilter::make(),
             ])
             ->actions([
@@ -219,6 +237,55 @@ class ItemResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('update_status')
+                        ->label('Cambiar Estado')
+                        ->icon('heroicon-o-arrow-path')
+                        ->form([
+                            Forms\Components\Select::make('status')
+                                ->label('Nuevo Estado')
+                                ->options([
+                                    'Disponible' => 'Disponible',
+                                    'En Préstamo' => 'En Préstamo',
+                                    'Vendido' => 'Vendido',
+                                    'Confiscado' => 'Confiscado',
+                                ])
+                                ->required(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['status' => $data['status']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Estado actualizado')
+                                ->body('El estado de los artículos seleccionados ha sido actualizado.')
+                        ),
+                    Tables\Actions\BulkAction::make('update_branch')
+                        ->label('Cambiar Sucursal')
+                        ->icon('heroicon-o-building-storefront')
+                        ->form([
+                            Forms\Components\Select::make('branch_id')
+                                ->label('Nueva Sucursal')
+                                ->relationship('branch', 'name')
+                                ->required()
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->action(function (array $data, $records) {
+                            foreach ($records as $record) {
+                                $record->update(['branch_id' => $data['branch_id']]);
+                            }
+                        })
+                        ->deselectRecordsAfterCompletion()
+                        ->successNotification(
+                            \Filament\Notifications\Notification::make()
+                                ->success()
+                                ->title('Sucursal actualizada')
+                                ->body('Los artículos han sido transferidos a la nueva sucursal.')
+                        ),
                     Tables\Actions\DeleteBulkAction::make(),
                     Tables\Actions\ForceDeleteBulkAction::make(),
                     Tables\Actions\RestoreBulkAction::make(),
@@ -230,7 +297,7 @@ class ItemResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            RelationManagers\ActivitiesRelationManager::class,
         ];
     }
 
