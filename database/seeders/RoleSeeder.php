@@ -59,11 +59,18 @@ class RoleSeeder extends Seeder
             'create_sale',
             'update_sale',
 
+            // Branch permissions (view only)
+            'view_branch',
+            'view_any_branch',
+
             // Widget permissions
-            'widget_StatsOverview',
-            'widget_LoansChart',
-            'widget_RevenueChart',
-            'widget_ItemsCategoryChart',
+            'widget_LoanStatsWidget',
+            'widget_LoansChartWidget',
+            'widget_RevenueChartWidget',
+
+            // Page permissions
+            'page_Reports',
+            'page_AppraisalCalculator',
         ])->get();
 
         $gerenteRole->syncPermissions($gerentePermissions);
@@ -96,8 +103,15 @@ class RoleSeeder extends Seeder
             'view_any_sale',
             'create_sale',
 
+            // Branch permissions (view only)
+            'view_branch',
+            'view_any_branch',
+
             // Widget permissions
-            'widget_StatsOverview',
+            'widget_LoanStatsWidget',
+
+            // Page permissions
+            'page_AppraisalCalculator',
         ])->get();
 
         $cajeroRole->syncPermissions($cajeroPermissions);
