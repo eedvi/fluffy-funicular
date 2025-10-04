@@ -36,10 +36,22 @@ class SalePolicy
 
     /**
      * Determine whether the user can update the model.
+     * Cajero can only edit sales created today
      */
     public function update(User $user, Sale $sale): bool
     {
-        return $user->can('update_sale');
+        // Admin and Gerente can edit any sale
+        if ($user->hasAnyRole(['Admin', 'Gerente', 'super_admin'])) {
+            return $user->can('update_sale');
+        }
+
+        // Cajero can only edit sales created today
+        if ($user->hasRole('Cajero')) {
+            $isCreatedToday = $sale->created_at->isToday();
+            return $user->can('update_sale') && $isCreatedToday;
+        }
+
+        return false;
     }
 
     /**

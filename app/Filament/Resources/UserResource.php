@@ -77,11 +77,21 @@ class UserResource extends Resource
                                     ->dehydrated(fn ($state) => filled($state))
                                     ->required(fn (string $context): bool => $context === 'create')
                                     ->revealable()
+                                    ->minLength(8)
                                     ->maxLength(255)
+                                    ->rules([
+                                        'regex:/[a-z]/',      // must contain lowercase
+                                        'regex:/[A-Z]/',      // must contain uppercase
+                                        'regex:/[0-9]/',      // must contain number
+                                        'regex:/[@$!%*#?&]/', // must contain special char
+                                    ])
+                                    ->validationMessages([
+                                        'regex' => 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un carácter especial (@$!%*#?&).',
+                                    ])
                                     ->helperText(fn (string $context): string =>
                                         $context === 'edit'
-                                            ? 'Dejar en blanco para mantener la contraseña actual'
-                                            : ''
+                                            ? 'Dejar en blanco para mantener la contraseña actual. Mínimo 8 caracteres con mayúsculas, minúsculas, números y caracteres especiales.'
+                                            : 'Mínimo 8 caracteres. Debe contener mayúsculas, minúsculas, números y caracteres especiales (@$!%*#?&).'
                                     ),
                                 Forms\Components\Toggle::make('is_active')
                                     ->label('Activo')
@@ -163,6 +173,29 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+
+                Tables\Actions\Action::make('logout_other_devices')
+                    ->label('Cerrar Otras Sesiones')
+                    ->icon('heroicon-o-arrow-right-on-rectangle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Cerrar Otras Sesiones')
+                    ->modalDescription(fn (User $record) => "¿Estás seguro de que deseas cerrar todas las sesiones activas de {$record->name}? El usuario será desconectado de todos sus dispositivos excepto el actual.")
+                    ->modalSubmitActionLabel('Sí, Cerrar Sesiones')
+                    ->action(function (User $record): void {
+                        $currentSessionId = session()->getId();
+                        $count = \Illuminate\Support\Facades\DB::table('sessions')
+                            ->where('user_id', $record->id)
+                            ->where('id', '!=', $currentSessionId)
+                            ->delete();
+
+                        \Filament\Notifications\Notification::make()
+                            ->success()
+                            ->title('Sesiones Cerradas')
+                            ->body("{$count} sesión(es) han sido cerradas exitosamente.")
+                            ->send();
+                    }),
+
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (User $record) => $record->id !== auth()->id()),
             ])

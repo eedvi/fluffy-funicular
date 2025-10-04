@@ -36,10 +36,22 @@ class PaymentPolicy
 
     /**
      * Determine whether the user can update the model.
+     * Cajero can only edit payments created today
      */
     public function update(User $user, Payment $payment): bool
     {
-        return $user->can('update_payment');
+        // Admin and Gerente can edit any payment
+        if ($user->hasAnyRole(['Admin', 'Gerente', 'super_admin'])) {
+            return $user->can('update_payment');
+        }
+
+        // Cajero can only edit payments created today
+        if ($user->hasRole('Cajero')) {
+            $isCreatedToday = $payment->created_at->isToday();
+            return $user->can('update_payment') && $isCreatedToday;
+        }
+
+        return false;
     }
 
     /**

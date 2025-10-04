@@ -225,7 +225,8 @@ class SaleResource extends Resource
                     ->label('Sucursal')
                     ->relationship('branch', 'name')
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()->can('view_all_branches')),
                 TrashedFilter::make(),
             ])
             ->actions([

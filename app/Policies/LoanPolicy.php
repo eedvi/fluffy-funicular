@@ -36,10 +36,22 @@ class LoanPolicy
 
     /**
      * Determine whether the user can update the model.
+     * Cajero can only edit loans created today
      */
     public function update(User $user, Loan $loan): bool
     {
-        return $user->can('update_loan');
+        // Admin and Gerente can edit any loan
+        if ($user->hasAnyRole(['Admin', 'Gerente', 'super_admin'])) {
+            return $user->can('update_loan');
+        }
+
+        // Cajero can only edit loans created today
+        if ($user->hasRole('Cajero')) {
+            $isCreatedToday = $loan->created_at->isToday();
+            return $user->can('update_loan') && $isCreatedToday;
+        }
+
+        return false;
     }
 
     /**

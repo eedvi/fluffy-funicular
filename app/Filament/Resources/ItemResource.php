@@ -210,7 +210,8 @@ class ItemResource extends Resource
                     ->label('Sucursal')
                     ->relationship('branch', 'name')
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()->can('view_all_branches')),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
