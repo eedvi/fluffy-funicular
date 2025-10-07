@@ -16,8 +16,8 @@
             <span class="info-value">{{ $loan->customer->first_name }} {{ $loan->customer->last_name }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">DNI:</span>
-            <span class="info-value">{{ $loan->customer->dni }}</span>
+            <span class="info-label">DPI:</span>
+            <span class="info-value">{{ $loan->customer->identity_number }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Teléfono:</span>
@@ -151,7 +151,7 @@
             <div class="signature-line">
                 <strong>Firma del Cliente</strong><br>
                 {{ $loan->customer->first_name }} {{ $loan->customer->last_name }}<br>
-                DNI: {{ $loan->customer->dni }}
+                DPI: {{ $loan->customer->identity_number }}
             </div>
         </div>
         <div class="signature-box">

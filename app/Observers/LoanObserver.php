@@ -12,7 +12,7 @@ class LoanObserver
     public function creating(Loan $loan): void
     {
         // Validate that the item is available
-        if ($loan->item && !in_array($loan->item->status, ['available', 'forfeited'])) {
+        if ($loan->item && !in_array($loan->item->status, ['Disponible', 'Confiscado', 'available', 'forfeited'])) {
             throw new \Exception("El artículo no está disponible para préstamo. Estado actual: {$loan->item->status}");
         }
 

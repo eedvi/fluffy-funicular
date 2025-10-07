@@ -450,7 +450,7 @@ class Reports extends Page implements HasForms
                     public function collection() {
                         return $this->data->map(fn($item) => [
                             'Cliente' => $item['customer']->full_name,
-                            'DNI' => $item['customer']->dni,
+                            'DPI' => $item['customer']->identity_number,
                             'Teléfono' => $item['customer']->phone,
                             'Total Préstamos' => $item['total_loans'],
                             'Préstamos Activos' => $item['active_loans'],
@@ -462,7 +462,7 @@ class Reports extends Page implements HasForms
                     }
 
                     public function headings(): array {
-                        return ['Cliente', 'DNI', 'Teléfono', 'Total Préstamos', 'Préstamos Activos', 'Préstamos Pagados', 'Total Prestado', 'Total Comprado', 'Volumen Total'];
+                        return ['Cliente', 'DPI', 'Teléfono', 'Total Préstamos', 'Préstamos Activos', 'Préstamos Pagados', 'Total Prestado', 'Total Comprado', 'Volumen Total'];
                     }
                 },
                 'analisis-clientes-' . now()->format('Y-m-d') . '.xlsx'

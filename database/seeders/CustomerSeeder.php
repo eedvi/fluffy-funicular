@@ -45,16 +45,16 @@ class CustomerSeeder extends Seeder
             $cityData = $faker->randomElement($cities);
             $dateOfBirth = $faker->dateTimeBetween('-65 years', '-18 years');
 
-            // Generate DNI based on age (older people have lower DNI numbers)
+            // Generate DPI based on age (older people have lower DPI numbers)
             $age = date('Y') - $dateOfBirth->format('Y');
             if ($age > 50) {
-                $dniPrefix = $faker->numberBetween(10, 25);
+                $dpiPrefix = $faker->numberBetween(10, 25);
             } elseif ($age > 35) {
-                $dniPrefix = $faker->numberBetween(25, 35);
+                $dpiPrefix = $faker->numberBetween(25, 35);
             } else {
-                $dniPrefix = $faker->numberBetween(35, 45);
+                $dpiPrefix = $faker->numberBetween(35, 45);
             }
-            $dni = $dniPrefix . $faker->numerify('######');
+            $dpi = $dpiPrefix . $faker->numerify('######');
 
             $monthlyIncome = $faker->numberBetween(80000, 500000);
             $creditLimit = round($monthlyIncome * $faker->randomFloat(2, 0.2, 0.5), -3);
@@ -65,8 +65,8 @@ class CustomerSeeder extends Seeder
                 'last_name' => $faker->lastName,
                 'gender' => $gender,
                 'date_of_birth' => $dateOfBirth->format('Y-m-d'),
-                'identity_type' => 'dni',
-                'identity_number' => $dni,
+                'identity_type' => 'dpi',
+                'identity_number' => $dpi,
                 'address' => $faker->streetAddress,
                 'city' => $cityData['city'],
                 'state' => $cityData['state'],

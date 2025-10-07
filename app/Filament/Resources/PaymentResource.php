@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use Filament\Tables\Filters\TrashedFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Notifications\Notification;
 
 class PaymentResource extends Resource
 {
@@ -71,7 +72,20 @@ class PaymentResource extends Resource
                                     ->numeric()
                                     ->prefix('$')
                                     ->default(0)
-                                    ->minValue(0),
+                                    ->minValue(0)
+                                    ->rules([
+                                        function (Forms\Get $get) {
+                                            return function (string $attribute, $value, \Closure $fail) use ($get) {
+                                                $loanId = $get('loan_id');
+                                                if ($loanId && $value) {
+                                                    $loan = \App\Models\Loan::find($loanId);
+                                                    if ($loan && $value > $loan->balance_remaining) {
+                                                        $fail("El monto ($" . number_format($value, 2) . ") no puede exceder el saldo pendiente de $" . number_format($loan->balance_remaining, 2));
+                                                    }
+                                                }
+                                            };
+                                        },
+                                    ]),
                                 Forms\Components\DatePicker::make('payment_date')
                                     ->label('Fecha de Pago')
                                     ->required()
@@ -179,7 +193,8 @@ class PaymentResource extends Resource
                     ->label('Sucursal')
                     ->relationship('branch', 'name')
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()->can('view_all_branches')),
                 TrashedFilter::make(),
             ])
             ->actions([

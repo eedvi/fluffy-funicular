@@ -68,7 +68,10 @@ class ItemResource extends Resource
                                     ->maxLength(100),
                                 Forms\Components\TextInput::make('serial_number')
                                     ->label('Número de Serie')
-                                    ->maxLength(100),
+                                    ->maxLength(100)
+                                    ->unique(Item::class, 'serial_number', ignoreRecord: true, modifyRuleUsing: function ($rule) {
+                                        return $rule->whereNotNull('serial_number');
+                                    }),
                                 Forms\Components\TextInput::make('location')
                                     ->label('Ubicación')
                                     ->maxLength(100),
@@ -136,15 +139,19 @@ class ItemResource extends Resource
                             ->label('Notas')
                             ->rows(3)
                             ->columnSpanFull(),
-                        Forms\Components\FileUpload::make('photos')
-                            ->label('Fotos del Artículo')
-                            ->image()
-                            ->multiple()
-                            ->maxFiles(5)
-                            ->directory('items')
-                            ->imageEditor()
-                            ->columnSpanFull()
-                            ->helperText('Puede subir hasta 5 imágenes'),
+                        // Forms\Components\FileUpload::make('photos')
+                        //     ->label('Fotos del Artículo')
+                        //     ->image()
+                        //     ->multiple()
+                        //     ->maxFiles(5)
+                        //     ->maxSize(10240)
+                        //     ->directory('items')
+                        //     ->imagePreviewHeight('250')
+                        //     ->panelLayout('grid')
+                        //     ->reorderable()
+                        //     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
+                        //     ->columnSpanFull()
+                        //     ->helperText('Puede subir hasta 5 imágenes (máx. 10MB cada una). Formatos: JPG, PNG, WEBP'),
                     ]),
             ]);
     }
@@ -210,7 +217,8 @@ class ItemResource extends Resource
                     ->label('Sucursal')
                     ->relationship('branch', 'name')
                     ->preload()
-                    ->searchable(),
+                    ->searchable()
+                    ->visible(fn () => auth()->user()->can('view_all_branches')),
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([

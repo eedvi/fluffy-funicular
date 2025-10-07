@@ -56,8 +56,8 @@ class ViewLoan extends ViewRecord
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('customer.full_name')
                                 ->label('Cliente'),
-                            Infolists\Components\TextEntry::make('customer.dni')
-                                ->label('DNI'),
+                            Infolists\Components\TextEntry::make('customer.identity_number')
+                                ->label('DPI'),
                             Infolists\Components\TextEntry::make('customer.phone')
                                 ->label('Teléfono'),
                             Infolists\Components\TextEntry::make('customer.email')
@@ -152,7 +152,7 @@ class ViewLoan extends ViewRecord
                                         }
                                         $daysRemaining = now()->diffInDays($record->due_date, false);
                                         if ($daysRemaining < 0) {
-                                            return abs($daysRemaining) . ' días vencido';
+                                            return abs(round($daysRemaining)) . ' días vencido';
                                         } else {
                                             return $daysRemaining . ' días restantes';
                                         }

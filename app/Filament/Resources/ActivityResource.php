@@ -38,7 +38,8 @@ class ActivityResource extends Resource
                 Tables\Columns\TextColumn::make('description')
                     ->label('Descripción')
                     ->searchable()
-                    ->limit(50),
+                    ->limit(50)
+                    ->tooltip(fn ($record) => $record->description),
 
                 Tables\Columns\TextColumn::make('subject_type')
                     ->label('Tipo de Registro')
@@ -52,13 +53,27 @@ class ActivityResource extends Resource
                         'Payment' => 'primary',
                         'Sale' => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('causer.name')
                     ->label('Usuario')
                     ->searchable()
                     ->sortable()
                     ->default('Sistema'),
+
+                Tables\Columns\TextColumn::make('properties.ip')
+                    ->label('IP')
+                    ->searchable()
+                    ->toggleable()
+                    ->default('N/A')
+                    ->icon('heroicon-m-globe-alt'),
+
+                Tables\Columns\TextColumn::make('properties.user_agent')
+                    ->label('Navegador/Dispositivo')
+                    ->limit(30)
+                    ->tooltip(fn ($record) => $record->properties['user_agent'] ?? '')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')
@@ -130,5 +145,11 @@ class ActivityResource extends Resource
     public static function canDeleteAny(): bool
     {
         return false;
+    }
+
+    // Only Admin and Gerente can access activity logs
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->hasAnyRole(['Admin', 'Gerente', 'super_admin']);
     }
 }

@@ -33,7 +33,7 @@
             <tr>
                 <th>#</th>
                 <th>Cliente</th>
-                <th>DNI</th>
+                <th>DPI</th>
                 <th>Teléfono</th>
                 <th class="text-center">Total<br>Préstamos</th>
                 <th class="text-center">Activos</th>
@@ -48,7 +48,7 @@
             <tr>
                 <td class="text-center">{{ $index + 1 }}</td>
                 <td><strong>{{ $data['customer']->full_name }}</strong></td>
-                <td>{{ $data['customer']->dni }}</td>
+                <td>{{ $data['customer']->dpi }}</td>
                 <td>{{ $data['customer']->phone }}</td>
                 <td class="text-center">{{ $data['total_loans'] }}</td>
                 <td class="text-center">{{ $data['active_loans'] }}</td>

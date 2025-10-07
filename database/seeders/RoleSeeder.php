@@ -17,6 +17,12 @@ class RoleSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Create view_all_branches permission if it doesn't exist
+        Permission::firstOrCreate([
+            'name' => 'view_all_branches',
+            'guard_name' => 'web',
+        ]);
+
         // Get all permissions
         $allPermissions = Permission::all();
 
@@ -62,6 +68,7 @@ class RoleSeeder extends Seeder
             // Branch permissions (view only)
             'view_branch',
             'view_any_branch',
+            'view_all_branches',
 
             // Widget permissions
             'widget_LoanStatsWidget',
@@ -78,30 +85,37 @@ class RoleSeeder extends Seeder
         // Create Cajero (Cashier) role
         $cajeroRole = Role::firstOrCreate(['name' => 'Cajero', 'guard_name' => 'web']);
 
-        // Cajero permissions: create loans/sales/payments only, view necessary data
+        // Cajero permissions: create loans/sales/payments/customers/items, view necessary data
         $cajeroPermissions = Permission::whereIn('name', [
-            // Customer permissions (view only)
+            // Customer permissions (view and create)
             'view_customer',
             'view_any_customer',
+            'create_customer',
+            'update_customer',
 
-            // Item permissions (view only)
+            // Item permissions (view and create)
             'view_item',
             'view_any_item',
+            'create_item',
+            'update_item',
 
-            // Loan permissions (create and view)
+            // Loan permissions (create, view, and update)
             'view_loan',
             'view_any_loan',
             'create_loan',
+            'update_loan',
 
-            // Payment permissions (create and view)
+            // Payment permissions (create, view, and update)
             'view_payment',
             'view_any_payment',
             'create_payment',
+            'update_payment',
 
-            // Sale permissions (create and view)
+            // Sale permissions (create, view, and update)
             'view_sale',
             'view_any_sale',
             'create_sale',
+            'update_sale',
 
             // Branch permissions (view only)
             'view_branch',

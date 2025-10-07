@@ -42,8 +42,8 @@
             <span class="info-value">{{ $sale->customer->first_name }} {{ $sale->customer->last_name }}</span>
         </div>
         <div class="info-row">
-            <span class="info-label">DNI:</span>
-            <span class="info-value">{{ $sale->customer->dni }}</span>
+            <span class="info-label">DPI:</span>
+            <span class="info-value">{{ $sale->customer->identity_number }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Teléfono:</span>
@@ -175,7 +175,7 @@
                 <strong>Firma del Cliente</strong><br>
                 @if($sale->customer)
                 {{ $sale->customer->first_name }} {{ $sale->customer->last_name }}<br>
-                DNI: {{ $sale->customer->dni }}
+                DPI: {{ $sale->customer->identity_number }}
                 @endif
             </div>
         </div>

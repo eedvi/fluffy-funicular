@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\BranchScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,9 +13,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
+#[ScopedBy([BranchScope::class])]
 class Item extends Model
 {
-    use SoftDeletes, LogsActivity;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -40,12 +44,20 @@ class Item extends Model
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'acquired_date' => 'date',
-        'photos' => 'array',
     ];
 
     protected $attributes = [
         'photos' => '[]',
     ];
+
+    // Accessor to ensure photos is always an array
+    protected function photos(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn ($value) => is_string($value) ? json_decode($value, true) ?? [] : ($value ?? []),
+            set: fn ($value) => is_array($value) ? json_encode($value) : ($value ?? '[]'),
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {
