@@ -44,12 +44,20 @@ class Item extends Model
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'acquired_date' => 'date',
-        'photos' => 'array',
     ];
 
     protected $attributes = [
         'photos' => '[]',
     ];
+
+    // Accessor to ensure photos is always an array
+    protected function photos(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: fn ($value) => is_string($value) ? json_decode($value, true) ?? [] : ($value ?? []),
+            set: fn ($value) => is_array($value) ? json_encode($value) : ($value ?? '[]'),
+        );
+    }
 
     public function getActivitylogOptions(): LogOptions
     {

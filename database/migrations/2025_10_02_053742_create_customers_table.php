@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('phone', 20)->nullable();
             $table->string('mobile', 20)->nullable();
             $table->string('email')->nullable()->unique();
-            $table->enum('identity_type', ['dni', 'passport', 'license'])->nullable();
+            $table->enum('identity_type', ['dpi', 'passport', 'license'])->nullable();
             $table->string('identity_number')->nullable()->unique();
             $table->date('identity_expiry')->nullable();
             $table->text('address')->nullable();

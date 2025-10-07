@@ -149,11 +149,11 @@ php artisan schedule:list
 
 | Type | Email | SMS | WhatsApp | Database |
 |------|-------|-----|----------|----------|
-| Loan Reminder | ✅ | 🔧 | 🔧 | ❌ |
-| Loan Overdue | ✅ | 🔧 | 🔧 | ✅ (Staff) |
-| Payment Received | ✅ | 🔧 | 🔧 | ❌ |
+| Loan Reminder |  | 🔧 | 🔧 |  |
+| Loan Overdue |  | 🔧 | 🔧 |  (Staff) |
+| Payment Received |  | 🔧 | 🔧 |  |
 
-✅ = Active | 🔧 = Needs API configuration | ❌ = Not implemented
+ = Active | 🔧 = Needs API configuration |  = Not implemented
 
 ## Testing Notifications
 

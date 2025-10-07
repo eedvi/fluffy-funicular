@@ -62,14 +62,11 @@ class CustomerResource extends Resource
                     ->schema([
                         Forms\Components\Grid::make(3)
                             ->schema([
-                                Forms\Components\Select::make('identity_type')
+                                Forms\Components\TextInput::make('identity_type')
                                     ->label('Tipo de Documento')
-                                    ->options([
-                                        'DNI' => 'DNI',
-                                        'Pasaporte' => 'Pasaporte',
-                                        'Cédula' => 'Cédula',
-                                        'Otro' => 'Otro',
-                                    ]),
+                                    ->default('DPI')
+                                    ->disabled()
+                                    ->dehydrated(),
                                 Forms\Components\TextInput::make('identity_number')
                                     ->label('Número de Documento')
                                     ->maxLength(50),

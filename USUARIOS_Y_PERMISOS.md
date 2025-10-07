@@ -50,19 +50,19 @@
 
 ## 🎭 Roles y Permisos
 
-### ⭐ ADMIN (Super Administrador)
+###  ADMIN (Super Administrador)
 **Acceso:** TOTAL - Sin restricciones
 
 **Descripción:**
 El rol Admin tiene acceso completo a todas las funcionalidades del sistema sin ninguna restricción de permisos.
 
 **Puede:**
-- ✅ Ver, crear, editar y eliminar todos los recursos
-- ✅ Gestionar usuarios y roles
-- ✅ Acceder a todas las páginas y reportes
-- ✅ Ver todos los widgets del dashboard
-- ✅ Gestionar sucursales
-- ✅ Configurar el sistema
+-  Ver, crear, editar y eliminar todos los recursos
+-  Gestionar usuarios y roles
+-  Acceder a todas las páginas y reportes
+-  Ver todos los widgets del dashboard
+-  Gestionar sucursales
+-  Configurar el sistema
 
 ---
 
@@ -78,29 +78,29 @@ El rol Admin tiene acceso completo a todas las funcionalidades del sistema sin n
 - **Sucursales** - view, view_any (solo lectura)
 
 #### 📄 Páginas Disponibles
-- ✅ Reports (Reportes)
-- ✅ AppraisalCalculator (Calculadora de Avalúos)
+-  Reports (Reportes)
+-  AppraisalCalculator (Calculadora de Avalúos)
 
 #### 📊 Widgets del Dashboard
-- ✅ LoanStatsWidget (Estadísticas de Préstamos)
-- ✅ LoansChartWidget (Gráfico de Préstamos)
-- ✅ RevenueChartWidget (Gráfico de Ingresos)
+-  LoanStatsWidget (Estadísticas de Préstamos)
+-  LoansChartWidget (Gráfico de Préstamos)
+-  RevenueChartWidget (Gráfico de Ingresos)
 
 **Puede:**
-- ✅ Gestionar clientes (crear, editar, ver)
-- ✅ Gestionar artículos (crear, editar, ver)
-- ✅ Crear y gestionar préstamos
-- ✅ Registrar pagos
-- ✅ Realizar ventas
-- ✅ Ver todas las sucursales
-- ✅ Acceder a reportes y análisis
-- ✅ Usar calculadora de avalúos
+-  Gestionar clientes (crear, editar, ver)
+-  Gestionar artículos (crear, editar, ver)
+-  Crear y gestionar préstamos
+-  Registrar pagos
+-  Realizar ventas
+-  Ver todas las sucursales
+-  Acceder a reportes y análisis
+-  Usar calculadora de avalúos
 
 **No puede:**
-- ❌ Eliminar registros
-- ❌ Gestionar usuarios
-- ❌ Crear o modificar sucursales
-- ❌ Acceder a configuración de roles
+-  Eliminar registros
+-  Gestionar usuarios
+-  Crear o modificar sucursales
+-  Acceder a configuración de roles
 
 ---
 
@@ -119,29 +119,29 @@ El rol Admin tiene acceso completo a todas las funcionalidades del sistema sin n
 - **Ventas** - view, view_any, create
 
 #### 📄 Páginas Disponibles
-- ✅ AppraisalCalculator (Calculadora de Avalúos)
+-  AppraisalCalculator (Calculadora de Avalúos)
 
 #### 📊 Widgets del Dashboard
-- ✅ LoanStatsWidget (Estadísticas de Préstamos)
+-  LoanStatsWidget (Estadísticas de Préstamos)
 
 **Puede:**
-- ✅ Ver clientes y artículos
-- ✅ Crear nuevos préstamos
-- ✅ Registrar pagos
-- ✅ Realizar ventas
-- ✅ Ver su sucursal
-- ✅ Usar calculadora de avalúos
-- ✅ Ver estadísticas básicas
+-  Ver clientes y artículos
+-  Crear nuevos préstamos
+-  Registrar pagos
+-  Realizar ventas
+-  Ver su sucursal
+-  Usar calculadora de avalúos
+-  Ver estadísticas básicas
 
 **No puede:**
-- ❌ Editar clientes o artículos
-- ❌ Modificar préstamos existentes
-- ❌ Editar pagos o ventas
-- ❌ Acceder a reportes completos
-- ❌ Ver gráficos de ingresos
-- ❌ Eliminar ningún registro
-- ❌ Gestionar usuarios
-- ❌ Acceder a configuración
+-  Editar clientes o artículos
+-  Modificar préstamos existentes
+-  Editar pagos o ventas
+-  Acceder a reportes completos
+-  Ver gráficos de ingresos
+-  Eliminar ningún registro
+-  Gestionar usuarios
+-  Acceder a configuración
 
 ---
 
@@ -149,7 +149,7 @@ El rol Admin tiene acceso completo a todas las funcionalidades del sistema sin n
 
 1. **Sucursal Principal** (MAIN)
    - Código: MAIN
-   - Marca principal: ✅
+   - Marca principal: 
    - Estado: Activo
 
 2. **Sucursal Norte** (NORTE)
@@ -182,16 +182,16 @@ El rol Admin tiene acceso completo a todas las funcionalidades del sistema sin n
 
 | Recurso | Admin | Gerente | Cajero |
 |---------|-------|---------|--------|
-| **Clientes** | ✅ CRUD Completo | ✅ Ver/Crear/Editar | 👁️ Solo Ver |
-| **Artículos** | ✅ CRUD Completo | ✅ Ver/Crear/Editar | 👁️ Solo Ver |
-| **Préstamos** | ✅ CRUD Completo | ✅ Ver/Crear/Editar | ✅ Ver/Crear |
-| **Pagos** | ✅ CRUD Completo | ✅ Ver/Crear/Editar | ✅ Ver/Crear |
-| **Ventas** | ✅ CRUD Completo | ✅ Ver/Crear/Editar | ✅ Ver/Crear |
-| **Sucursales** | ✅ CRUD Completo | 👁️ Solo Ver | 👁️ Solo Ver |
-| **Usuarios** | ✅ CRUD Completo | ❌ Sin acceso | ❌ Sin acceso |
-| **Roles** | ✅ CRUD Completo | ❌ Sin acceso | ❌ Sin acceso |
-| **Reportes** | ✅ Acceso Total | ✅ Acceso Total | ❌ Sin acceso |
-| **Dashboard** | ✅ Todos Widgets | ✅ Widgets Completos | 📊 Widget Básico |
+| **Clientes** |  CRUD Completo |  Ver/Crear/Editar | 👁️ Solo Ver |
+| **Artículos** |  CRUD Completo |  Ver/Crear/Editar | 👁️ Solo Ver |
+| **Préstamos** |  CRUD Completo |  Ver/Crear/Editar |  Ver/Crear |
+| **Pagos** |  CRUD Completo |  Ver/Crear/Editar |  Ver/Crear |
+| **Ventas** |  CRUD Completo |  Ver/Crear/Editar |  Ver/Crear |
+| **Sucursales** |  CRUD Completo | 👁️ Solo Ver | 👁️ Solo Ver |
+| **Usuarios** |  CRUD Completo |  Sin acceso |  Sin acceso |
+| **Roles** |  CRUD Completo |  Sin acceso |  Sin acceso |
+| **Reportes** |  Acceso Total |  Acceso Total |  Sin acceso |
+| **Dashboard** |  Todos Widgets |  Widgets Completos | 📊 Widget Básico |
 
 ---
 

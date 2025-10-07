@@ -128,7 +128,7 @@ class LoanResource extends Resource
                                     ->numeric()
                                     ->prefix('$')
                                     ->disabled()
-                                    ->dehydrated(),
+                                    ->dehydrated(false),
                             ]),
                     ]),
 

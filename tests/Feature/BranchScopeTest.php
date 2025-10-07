@@ -183,7 +183,7 @@ class BranchScopeTest extends TestCase
             'email' => 'john@test.com',
             'phone' => '1234567890',
             'address' => '123 Test St',
-            'id_type' => 'DNI',
+            'id_type' => 'DPI',
             'id_number' => '12345678',
         ]);
 
