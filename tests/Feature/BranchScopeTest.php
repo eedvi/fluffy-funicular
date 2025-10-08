@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Sale;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -77,7 +78,7 @@ class BranchScopeTest extends TestCase
         $this->cajeroUser->assignRole('Cajero');
     }
 
-    /** @test */
+    #[Test]
     public function admin_can_see_all_branches_items()
     {
         // Create items in both branches
@@ -109,7 +110,7 @@ class BranchScopeTest extends TestCase
         $this->assertTrue($items->contains('id', $item2->id));
     }
 
-    /** @test */
+    #[Test]
     public function gerente_can_see_all_branches_items()
     {
         // Create items in both branches
@@ -141,7 +142,7 @@ class BranchScopeTest extends TestCase
         $this->assertTrue($items->contains('id', $item2->id));
     }
 
-    /** @test */
+    #[Test]
     public function cajero_can_only_see_their_branch_items()
     {
         // Create items in both branches
@@ -173,7 +174,7 @@ class BranchScopeTest extends TestCase
         $this->assertFalse($items->contains('id', $item2->id));
     }
 
-    /** @test */
+    #[Test]
     public function cajero_can_only_see_their_branch_loans()
     {
         // Create a customer
@@ -247,21 +248,21 @@ class BranchScopeTest extends TestCase
         $this->assertFalse($loans->contains('id', $loan2->id));
     }
 
-    /** @test */
+    #[Test]
     public function gerente_has_view_all_branches_permission()
     {
         $this->actingAs($this->gerenteUser);
         $this->assertTrue($this->gerenteUser->can('view_all_branches'));
     }
 
-    /** @test */
+    #[Test]
     public function cajero_does_not_have_view_all_branches_permission()
     {
         $this->actingAs($this->cajeroUser);
         $this->assertFalse($this->cajeroUser->can('view_all_branches'));
     }
 
-    /** @test */
+    #[Test]
     public function admin_has_view_all_branches_permission()
     {
         $this->actingAs($this->adminUser);
