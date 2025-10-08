@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: pawnshop-app
+    env: php
+    buildCommand: "./build.sh"
+    startCommand: "php artisan serve --host=0.0.0.0 --port=$PORT"
+    envVars:
+      - key: APP_NAME
+        value: "Pawnshop Management System"
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        fromDatabase:
+          name: pawnshop-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: pawnshop-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: pawnshop-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: pawnshop-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: pawnshop-db
+          property: password
+      - key: MAIL_MAILER
+        value: log
+      - key: LOG_CHANNEL
+        value: stack
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+
+databases:
+  - name: pawnshop-db
+    databaseName: pawnshop
+    user: pawnshop_user
