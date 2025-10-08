@@ -39,7 +39,7 @@ COPY --chown=www-data:www-data . /var/www/html
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 # Install NPM dependencies and build assets
-RUN npm ci && npm run build
+RUN npm install && npm run build
 
 # Configure Apache
 RUN a2enmod rewrite
