@@ -3,6 +3,7 @@ services:
     name: pawnshop-app
     runtime: docker
     dockerfilePath: ./Dockerfile
+    plan: free
     envVars:
       - key: APP_NAME
         value: "Pawnshop Management System"
@@ -15,7 +16,7 @@ services:
       - key: APP_URL
         sync: false
       - key: DB_CONNECTION
-        value: mysql
+        value: pgsql
       - key: DB_HOST
         fromDatabase:
           name: pawnshop-db
@@ -51,3 +52,4 @@ databases:
   - name: pawnshop-db
     databaseName: pawnshop
     user: pawnshop_user
+    plan: free
