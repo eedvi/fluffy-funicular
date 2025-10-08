@@ -1,9 +1,8 @@
 services:
   - type: web
     name: pawnshop-app
-    env: php
-    buildCommand: "./build.sh"
-    startCommand: "php artisan serve --host=0.0.0.0 --port=$PORT"
+    env: docker
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: APP_NAME
         value: "Pawnshop Management System"
