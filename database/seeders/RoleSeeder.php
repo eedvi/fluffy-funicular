@@ -17,7 +17,72 @@ class RoleSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create view_all_branches permission if it doesn't exist
+        // Define all resources
+        $resources = [
+            'customer',
+            'item',
+            'loan',
+            'payment',
+            'sale',
+            'branch',
+            'user',
+            'activity',
+            'session',
+        ];
+
+        // Define all CRUD permissions for each resource
+        $crudPermissions = [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'delete',
+            'delete_any',
+            'force_delete',
+            'force_delete_any',
+            'restore',
+            'restore_any',
+            'replicate',
+        ];
+
+        // Create all resource permissions
+        foreach ($resources as $resource) {
+            foreach ($crudPermissions as $permission) {
+                Permission::firstOrCreate([
+                    'name' => "{$permission}_{$resource}",
+                    'guard_name' => 'web',
+                ]);
+            }
+        }
+
+        // Create widget permissions
+        $widgets = [
+            'widget_LoanStatsWidget',
+            'widget_LoansChartWidget',
+            'widget_RevenueChartWidget',
+        ];
+
+        foreach ($widgets as $widget) {
+            Permission::firstOrCreate([
+                'name' => $widget,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        // Create page permissions
+        $pages = [
+            'page_Reports',
+            'page_AppraisalCalculator',
+        ];
+
+        foreach ($pages as $page) {
+            Permission::firstOrCreate([
+                'name' => $page,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        // Create custom permissions
         Permission::firstOrCreate([
             'name' => 'view_all_branches',
             'guard_name' => 'web',
