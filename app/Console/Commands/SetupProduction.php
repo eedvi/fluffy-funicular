@@ -20,9 +20,6 @@ class SetupProduction extends Command
         $this->info('Seeding roles and permissions...');
         $this->call('db:seed', ['--class' => 'RoleSeeder', '--force' => true]);
 
-        $this->info('Generating Shield permissions...');
-        $this->call('shield:generate', ['--all' => true]);
-
         // 2. Create default branch if it doesn't exist
         $branch = Branch::first();
         if (!$branch) {
