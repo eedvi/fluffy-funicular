@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global middleware
         $middleware->append(\App\Http\Middleware\ForceHttps::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(\App\Http\Middleware\LoginRateLimiter::class);
 
         // Trusted proxies configured via TRUSTED_PROXIES env variable
         // trustProxies() is called automatically by Laravel

@@ -16,3 +16,6 @@ Schedule::command('loans:send-reminders')->dailyAt('09:00');
 
 // Schedule overdue interest calculation and emails to run daily at 1 AM
 Schedule::command('loans:calculate-overdue-interest')->dailyAt('01:00');
+
+// Schedule customer credit score calculation to run weekly on Sunday at 2 AM
+Schedule::command('customers:calculate-credit-scores')->weekly()->sundays()->at('02:00');

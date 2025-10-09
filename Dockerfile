@@ -1,5 +1,7 @@
-# Use PHP 8.3 with Apache
-FROM php:8.3-apache
+# syntax=docker/dockerfile:1
+
+# Use the official FrankenPHP image with PHP 8.3
+FROM dunglas/frankenphp:latest-php8.3
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -8,54 +10,62 @@ RUN apt-get update && apt-get install -y \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    libzip-dev \
-    libicu-dev \
     libpq-dev \
+    netcat-traditional \
     zip \
     unzip \
-    nodejs \
-    npm
-
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
-RUN docker-php-ext-install pdo_pgsql pdo_mysql mbstring exif pcntl bcmath gd zip intl
-RUN docker-php-ext-configure intl
-
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN install-php-extensions \
+    pdo_pgsql \
+    pgsql \
+    pdo_sqlite \
+    sqlite3 \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    gd \
+    intl \
+    zip \
+    opcache \
+    redis
 
 # Set working directory
-WORKDIR /var/www/html
+WORKDIR /app
 
-# Copy existing application directory contents
-COPY . /var/www/html
+# Copy composer files first for better caching
+COPY composer.json composer.lock /app/
 
-# Copy existing application directory permissions
-COPY --chown=www-data:www-data . /var/www/html
+# Install Composer dependencies
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Copy application code
+COPY . /app
 
-# Install NPM dependencies and build assets
-RUN npm install && npm run build
+# Run composer scripts
+RUN composer dump-autoload --optimize
 
-# Configure Apache
-RUN a2enmod rewrite
-RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|' /etc/apache2/sites-available/000-default.conf
+# Set permissions
+RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
+RUN chmod -R 775 /app/storage /app/bootstrap/cache
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Copy Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile
 
-# Expose port 80
-EXPOSE 80
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Start Apache
-CMD php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache && \
-    php artisan migrate --force && \
-    php artisan app:setup-production && \
-    apache2-foreground
+# Expose port (Render will assign PORT env variable)
+EXPOSE ${PORT:-80}
+
+# Health check (use PORT env variable or default to 80)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-80}/up || exit 1
+
+# Use custom entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

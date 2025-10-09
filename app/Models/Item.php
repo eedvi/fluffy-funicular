@@ -88,6 +88,11 @@ class Item extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(ItemTransfer::class);
+    }
+
     // Scopes
     public function scopeAvailable($query)
     {

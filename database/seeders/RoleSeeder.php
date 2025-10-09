@@ -22,6 +22,10 @@ class RoleSeeder extends Seeder
             'customer',
             'item',
             'loan',
+            'loanrenewal',
+            'interestcharge',
+            'loyaltyprogram',
+            'itemtransfer',
             'payment',
             'sale',
             'branch',
@@ -60,6 +64,10 @@ class RoleSeeder extends Seeder
             'widget_LoanStatsWidget',
             'widget_LoansChartWidget',
             'widget_RevenueChartWidget',
+            'widget_InterestRevenueWidget',
+            'widget_CreditScoreDistributionWidget',
+            'widget_TopCustomersWidget',
+            'widget_OverdueLoansAnalyticsWidget',
         ];
 
         foreach ($widgets as $widget) {
@@ -118,6 +126,24 @@ class RoleSeeder extends Seeder
             'create_loan',
             'update_loan',
 
+            // Loan Renewal permissions
+            'view_loanrenewal',
+            'view_any_loanrenewal',
+            'create_loanrenewal',
+            'update_loanrenewal',
+
+            // Interest Charge permissions
+            'view_interestcharge',
+            'view_any_interestcharge',
+            'create_interestcharge',
+            'update_interestcharge',
+
+            // Loyalty Program permissions
+            'view_loyaltyprogram',
+            'view_any_loyaltyprogram',
+            'create_loyaltyprogram',
+            'update_loyaltyprogram',
+
             // Payment permissions
             'view_payment',
             'view_any_payment',
@@ -139,6 +165,10 @@ class RoleSeeder extends Seeder
             'widget_LoanStatsWidget',
             'widget_LoansChartWidget',
             'widget_RevenueChartWidget',
+            'widget_InterestRevenueWidget',
+            'widget_CreditScoreDistributionWidget',
+            'widget_TopCustomersWidget',
+            'widget_OverdueLoansAnalyticsWidget',
 
             // Page permissions
             'page_Reports',
@@ -169,6 +199,20 @@ class RoleSeeder extends Seeder
             'view_any_loan',
             'create_loan',
             'update_loan',
+
+            // Loan Renewal permissions (create, view, and update)
+            'view_loanrenewal',
+            'view_any_loanrenewal',
+            'create_loanrenewal',
+            'update_loanrenewal',
+
+            // Interest Charge permissions (view only - Cajero cannot create/edit)
+            'view_interestcharge',
+            'view_any_interestcharge',
+
+            // Loyalty Program permissions (view only)
+            'view_loyaltyprogram',
+            'view_any_loyaltyprogram',
 
             // Payment permissions (create, view, and update)
             'view_payment',

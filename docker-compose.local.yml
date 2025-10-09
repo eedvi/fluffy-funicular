@@ -1,0 +1,88 @@
+version: '3.8'
+
+# Docker Compose configuration for LOCAL DEVELOPMENT
+# Includes PostgreSQL and Redis containers for testing
+# Usage: docker-compose -f docker-compose.local.yml up -d
+
+services:
+  frankenphp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fluffy-funicular-frankenphp:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      # Mount source code for development
+      - .:/app
+    environment:
+      SERVER_NAME: "${SERVER_NAME:-:80}"
+      FRANKENPHP_CONFIG: "worker /app/public/index.php"
+      # Laravel environment variables
+      APP_ENV: "local"
+      APP_KEY: "${APP_KEY}"
+      APP_DEBUG: "true"
+      # Local PostgreSQL database
+      DB_CONNECTION: "pgsql"
+      DB_HOST: "postgres"
+      DB_PORT: "5432"
+      DB_DATABASE: "${DB_DATABASE:-pawn_shop}"
+      DB_USERNAME: "${DB_USERNAME:-postgres}"
+      DB_PASSWORD: "${DB_PASSWORD:-password}"
+      # Local Redis
+      REDIS_HOST: "redis"
+      REDIS_PASSWORD: "null"
+      REDIS_PORT: "6379"
+      # Cache and session configuration
+      CACHE_DRIVER: "redis"
+      SESSION_DRIVER: "redis"
+      QUEUE_CONNECTION: "redis"
+      # Auto-migrate on startup
+      AUTO_MIGRATE: "true"
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-pawn_shop}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:

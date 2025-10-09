@@ -47,6 +47,11 @@ services:
         value: file
       - key: QUEUE_CONNECTION
         value: sync
+      - key: AUTO_MIGRATE
+        value: true
+      # Uncomment on first deploy to setup roles, branches, and admin user
+      # - key: SETUP_PRODUCTION
+      #   value: true
 
 databases:
   - name: pawnshop-db

@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  frankenphp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fluffy-funicular-frankenphp:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      # For development: mount source code
+      # - .:/app
+    environment:
+      SERVER_NAME: "${SERVER_NAME:-:80}"
+      FRANKENPHP_CONFIG: "worker /app/public/index.php"
+      # Laravel environment variables
+      APP_ENV: "${APP_ENV:-production}"
+      APP_KEY: "${APP_KEY}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      # Database configuration (external/managed service)
+      DB_CONNECTION: "${DB_CONNECTION:-pgsql}"
+      DB_HOST: "${DB_HOST}"
+      DB_PORT: "${DB_PORT:-5432}"
+      DB_DATABASE: "${DB_DATABASE}"
+      DB_USERNAME: "${DB_USERNAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      # Redis configuration (external/managed service)
+      REDIS_HOST: "${REDIS_HOST:-127.0.0.1}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:-null}"
+      REDIS_PORT: "${REDIS_PORT:-6379}"
+      # Cache and session configuration
+      CACHE_DRIVER: "${CACHE_DRIVER:-database}"
+      SESSION_DRIVER: "${SESSION_DRIVER:-database}"
+      QUEUE_CONNECTION: "${QUEUE_CONNECTION:-database}"
+      # Deployment options
+      AUTO_MIGRATE: "${AUTO_MIGRATE:-true}"
+    working_dir: /app
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -69,7 +69,9 @@ class CustomerResource extends Resource
                                     ->dehydrated(),
                                 Forms\Components\TextInput::make('identity_number')
                                     ->label('Número de Documento')
-                                    ->maxLength(50),
+                                    ->maxLength(50)
+                                    ->unique(ignoreRecord: true)
+                                    ->helperText('El número de documento debe ser único'),
                                 Forms\Components\DatePicker::make('identity_expiry')
                                     ->label('Fecha de Vencimiento')
                                     ->displayFormat('d/m/Y'),
@@ -306,6 +308,7 @@ class CustomerResource extends Resource
     {
         return [
             RelationManagers\LoansRelationManager::class,
+            RelationManagers\PaymentsRelationManager::class,
             RelationManagers\SalesRelationManager::class,
         ];
     }

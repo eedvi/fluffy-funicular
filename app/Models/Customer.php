@@ -84,6 +84,16 @@ class Customer extends Model
         return $this->hasMany(Sale::class);
     }
 
+    public function payments()
+    {
+        return $this->hasManyThrough(Payment::class, Loan::class);
+    }
+
+    public function loyaltyProgram()
+    {
+        return $this->hasOne(LoyaltyProgram::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

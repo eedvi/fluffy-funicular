@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Payment;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class RevenueChartWidget extends ChartWidget
 {
@@ -46,25 +47,29 @@ class RevenueChartWidget extends ChartWidget
 
     private function getRevenuePerMonth(): array
     {
-        $months = collect(range(0, 11))->map(function ($monthsAgo) {
-            return now()->subMonths(11 - $monthsAgo);
+        $cacheKey = 'revenue_chart_' . ($this->branchFilter ?? 'all');
+
+        return Cache::remember($cacheKey, 300, function () {
+            $months = collect(range(0, 11))->map(function ($monthsAgo) {
+                return now()->subMonths(11 - $monthsAgo);
+            });
+
+            $revenue = $months->map(function ($month) {
+                return Payment::where('status', 'completed')
+                    ->whereYear('payment_date', $month->year)
+                    ->whereMonth('payment_date', $month->month)
+                    ->when($this->branchFilter, fn($query) => $query->whereHas('loan', fn($q) => $q->where('branch_id', $this->branchFilter)))
+                    ->sum('amount');
+            })->toArray();
+
+            $labels = $months->map(function ($month) {
+                return $month->format('M Y');
+            })->toArray();
+
+            return [
+                'revenue' => $revenue,
+                'labels' => $labels,
+            ];
         });
-
-        $revenue = $months->map(function ($month) {
-            return Payment::where('status', 'Completado')
-                ->whereYear('payment_date', $month->year)
-                ->whereMonth('payment_date', $month->month)
-                ->when($this->branchFilter, fn($query) => $query->whereHas('loan', fn($q) => $q->where('branch_id', $this->branchFilter)))
-                ->sum('amount');
-        })->toArray();
-
-        $labels = $months->map(function ($month) {
-            return $month->format('M Y');
-        })->toArray();
-
-        return [
-            'revenue' => $revenue,
-            'labels' => $labels,
-        ];
     }
 }
