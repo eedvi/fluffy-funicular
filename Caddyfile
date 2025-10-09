@@ -5,9 +5,12 @@
     auto_https off
     # Define order for php_server
     order php_server before file_server
+    # Disable admin API on privileged port
+    admin off
 }
 
-:{$PORT:80} {
+# Use environment variable PORT (Render assigns this dynamically)
+:{$PORT:8080} {
     # Set the root directory (absolute path for Docker)
     root * /app/public
 

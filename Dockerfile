@@ -60,12 +60,12 @@ COPY Caddyfile /etc/caddy/Caddyfile
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose port (Render will assign PORT env variable)
-EXPOSE ${PORT:-80}
+# Expose port (use 8080 as default, Render will assign PORT env variable)
+EXPOSE 8080
 
-# Health check (use PORT env variable or default to 80)
+# Health check (use PORT env variable or default to 8080)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-80}/up || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/up || exit 1
 
 # Run entrypoint script and start FrankenPHP
 CMD ["/usr/local/bin/docker-entrypoint.sh"]
