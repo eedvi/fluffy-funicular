@@ -12,7 +12,7 @@ services:
       - key: APP_KEY
         generateValue: true
       - key: APP_DEBUG
-        value: false
+        value: "false"
       - key: APP_URL
         sync: false
       - key: DB_CONNECTION
@@ -48,7 +48,7 @@ services:
       - key: QUEUE_CONNECTION
         value: sync
       - key: AUTO_MIGRATE
-        value: true
+        value: "true"
       # Uncomment on first deploy to setup roles, branches, and admin user
       # - key: SETUP_PRODUCTION
       #   value: true
