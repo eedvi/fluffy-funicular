@@ -1,71 +1,82 @@
-# syntax=docker/dockerfile:1
-
-# Use the official FrankenPHP image with PHP 8.3
-FROM dunglas/frankenphp:latest-php8.3
+# Multi-stage build: PHP-FPM + Nginx for Render.com
+FROM php:8.3-fpm-alpine AS php-fpm
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     git \
     curl \
     libpng-dev \
-    libonig-dev \
+    oniguruma-dev \
     libxml2-dev \
-    libpq-dev \
-    netcat-traditional \
+    libzip-dev \
+    icu-dev \
+    postgresql-dev \
     zip \
     unzip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    nginx \
+    supervisor
 
 # Install PHP extensions
-RUN install-php-extensions \
+RUN docker-php-ext-install \
     pdo_pgsql \
     pgsql \
-    pdo_sqlite \
-    sqlite3 \
     mbstring \
     exif \
     pcntl \
     bcmath \
     gd \
-    intl \
     zip \
-    opcache \
-    redis
+    intl \
+    opcache
+
+# Install Redis extension
+RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    && apk del .build-deps
+
+# Get Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Copy composer files first for better caching
-COPY composer.json composer.lock /app/
+# Copy composer files
+COPY composer.json composer.lock ./
 
-# Install Composer dependencies
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-scripts
 
-# Copy application code
-COPY . /app
+# Copy application
+COPY . .
 
 # Run composer scripts
 RUN composer dump-autoload --optimize
 
 # Set permissions
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache
-RUN chmod -R 775 /app/storage /app/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
+    chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Copy Caddyfile
-COPY Caddyfile /etc/caddy/Caddyfile
+# Copy PHP-FPM configuration
+COPY docker/fpm/php-fpm.conf /usr/local/etc/php-fpm.d/zz-custom.conf
+COPY docker/fpm/php.ini /usr/local/etc/php/conf.d/custom.ini
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+# Copy Nginx configuration
+COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
+
+# Copy supervisor configuration
+COPY docker/supervisor/supervisord.conf /etc/supervisord.conf
+
+# Copy entrypoint
+COPY docker/entrypoint-fpm.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Expose port (use 8080 as default, Render will assign PORT env variable)
+# Create necessary directories
+RUN mkdir -p /var/log/supervisor /run/nginx /var/log/nginx
+
+# Expose port (Render assigns this)
 EXPOSE 8080
 
-# Health check (use PORT env variable or default to 8080)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8080}/up || exit 1
-
-# Run entrypoint script and start FrankenPHP
+# Use supervisor to manage nginx and php-fpm
 CMD ["/usr/local/bin/docker-entrypoint.sh"]
