@@ -55,5 +55,5 @@ fi
 
 echo "✨ Application ready!"
 
-# Start FrankenPHP
-exec /usr/local/bin/frankenphp run --config /etc/caddy/Caddyfile
+# Start FrankenPHP (using default binary from PATH)
+frankenphp run --config /etc/caddy/Caddyfile

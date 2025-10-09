@@ -67,5 +67,5 @@ EXPOSE ${PORT:-80}
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:${PORT:-80}/up || exit 1
 
-# Use custom entrypoint
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# Run entrypoint script and start FrankenPHP
+CMD ["/usr/local/bin/docker-entrypoint.sh"]
