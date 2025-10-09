@@ -2,7 +2,7 @@ services:
   - type: web
     name: pawnshop-app
     runtime: docker
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./Dockerfile.render
     plan: free
     envVars:
       - key: APP_NAME
