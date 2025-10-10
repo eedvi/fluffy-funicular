@@ -39,10 +39,8 @@ class AppServiceProvider extends ServiceProvider
         Sale::observe(SaleObserver::class);
 
         // Register authentication event listeners
-        Event::listen(Login::class, [
-            LogSuccessfulLogin::class,
-            UpdateSessionUserId::class,  // Populate user_id in sessions table
-        ]);
+        Event::listen(Login::class, LogSuccessfulLogin::class);
+        Event::listen(Login::class, UpdateSessionUserId::class);  // Populate user_id in sessions table
         Event::listen(Logout::class, LogSuccessfulLogout::class);
         Event::listen(Failed::class, LogFailedLogin::class);
     }
