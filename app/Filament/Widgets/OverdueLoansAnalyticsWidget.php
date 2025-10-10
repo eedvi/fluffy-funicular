@@ -29,30 +29,43 @@ class OverdueLoansAnalyticsWidget extends ChartWidget
         $cacheKey = 'overdue_analytics_' . ($branchId ?? 'all');
 
         return Cache::remember($cacheKey, 300, function () use ($branchId) {
+            // Database-agnostic date difference (works with MySQL and PostgreSQL)
+            $isPostgres = config('database.default') === 'pgsql';
+
             // Count overdue loans by days overdue ranges
             $ranges = [
                 '1-7 días' => Loan::where('status', 'overdue')
-                    ->whereRaw('DATEDIFF(NOW(), due_date) BETWEEN 1 AND 7')
+                    ->whereRaw($isPostgres
+                        ? 'EXTRACT(DAY FROM (NOW() - due_date)) BETWEEN 1 AND 7'
+                        : 'DATEDIFF(NOW(), due_date) BETWEEN 1 AND 7')
                     ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                     ->count(),
 
                 '8-15 días' => Loan::where('status', 'overdue')
-                    ->whereRaw('DATEDIFF(NOW(), due_date) BETWEEN 8 AND 15')
+                    ->whereRaw($isPostgres
+                        ? 'EXTRACT(DAY FROM (NOW() - due_date)) BETWEEN 8 AND 15'
+                        : 'DATEDIFF(NOW(), due_date) BETWEEN 8 AND 15')
                     ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                     ->count(),
 
                 '16-30 días' => Loan::where('status', 'overdue')
-                    ->whereRaw('DATEDIFF(NOW(), due_date) BETWEEN 16 AND 30')
+                    ->whereRaw($isPostgres
+                        ? 'EXTRACT(DAY FROM (NOW() - due_date)) BETWEEN 16 AND 30'
+                        : 'DATEDIFF(NOW(), due_date) BETWEEN 16 AND 30')
                     ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                     ->count(),
 
                 '31-60 días' => Loan::where('status', 'overdue')
-                    ->whereRaw('DATEDIFF(NOW(), due_date) BETWEEN 31 AND 60')
+                    ->whereRaw($isPostgres
+                        ? 'EXTRACT(DAY FROM (NOW() - due_date)) BETWEEN 31 AND 60'
+                        : 'DATEDIFF(NOW(), due_date) BETWEEN 31 AND 60')
                     ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                     ->count(),
 
                 '60+ días' => Loan::where('status', 'overdue')
-                    ->whereRaw('DATEDIFF(NOW(), due_date) > 60')
+                    ->whereRaw($isPostgres
+                        ? 'EXTRACT(DAY FROM (NOW() - due_date)) > 60'
+                        : 'DATEDIFF(NOW(), due_date) > 60')
                     ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
                     ->count(),
             ];
