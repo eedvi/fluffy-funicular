@@ -26,6 +26,19 @@ class SessionResource extends Resource
 
     protected static ?int $navigationSort = 9;
 
+    /**
+     * Filter query to show only authenticated sessions
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->where(function ($query) {
+                // Filter sessions that have authentication data in payload
+                $query->whereRaw("payload LIKE '%login_web_%'")
+                      ->orWhereRaw("payload LIKE '%_auth%'");
+            });
+    }
+
     public static function form(Form $form): Form
     {
         return $form
