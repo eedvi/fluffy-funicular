@@ -165,12 +165,12 @@ class LoanResource extends Resource
                                     ->label('Estado')
                                     ->required()
                                     ->options([
-                                        'Activo' => 'Activo',
-                                        'Pagado' => 'Pagado',
-                                        'Vencido' => 'Vencido',
-                                        'Confiscado' => 'Confiscado',
+                                        Loan::STATUS_ACTIVE => 'Activo',
+                                        Loan::STATUS_PAID => 'Pagado',
+                                        Loan::STATUS_OVERDUE => 'Vencido',
+                                        Loan::STATUS_FORFEITED => 'Confiscado',
                                     ])
-                                    ->default('Activo')
+                                    ->default(Loan::STATUS_ACTIVE)
                                     ->native(false),
                                 Forms\Components\DatePicker::make('forfeited_date')
                                     ->label('Fecha de Confiscación')
@@ -248,11 +248,18 @@ class LoanResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Loan::STATUS_ACTIVE => 'Activo',
+                        Loan::STATUS_PAID => 'Pagado',
+                        Loan::STATUS_OVERDUE => 'Vencido',
+                        Loan::STATUS_FORFEITED => 'Confiscado',
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
-                        'Activo' => 'success',
-                        'Pagado' => 'info',
-                        'Vencido' => 'warning',
-                        'Confiscado' => 'danger',
+                        Loan::STATUS_ACTIVE => 'success',
+                        Loan::STATUS_PAID => 'info',
+                        Loan::STATUS_OVERDUE => 'warning',
+                        Loan::STATUS_FORFEITED => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('due_date')
@@ -286,7 +293,7 @@ class LoanResource extends Resource
                     ->label('Renovar Préstamo')
                     ->icon('heroicon-o-arrow-path')
                     ->color('info')
-                    ->visible(fn (Loan $record): bool => in_array($record->status, ['Activo', 'Vencido']))
+                    ->visible(fn (Loan $record): bool => in_array($record->status, [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE]))
                     ->form([
                         Forms\Components\Hidden::make('loan_amount')
                             ->default(fn (Loan $record) => $record->loan_amount),
@@ -393,20 +400,20 @@ class LoanResource extends Resource
                     ->label('Confiscar Artículo')
                     ->icon('heroicon-o-shield-exclamation')
                     ->color('danger')
-                    ->visible(fn (Loan $record): bool => $record->status === 'Vencido')
+                    ->visible(fn (Loan $record): bool => $record->status === Loan::STATUS_OVERDUE)
                     ->requiresConfirmation()
                     ->modalHeading('Confiscar Artículo')
                     ->modalDescription('¿Está seguro de que desea confiscar este artículo? Esta acción actualizará el estado del préstamo a "Confiscado" y el artículo asociado también será marcado como confiscado.')
                     ->modalSubmitActionLabel('Sí, Confiscar')
                     ->action(function (Loan $record): void {
                         $record->update([
-                            'status' => 'Confiscado',
+                            'status' => Loan::STATUS_FORFEITED,
                             'forfeited_date' => now(),
                         ]);
 
                         if ($record->item) {
                             $record->item->update([
-                                'status' => 'Confiscado',
+                                'status' => 'Confiscado', // Item model doesn't have constants yet
                             ]);
                         }
 
@@ -422,7 +429,7 @@ class LoanResource extends Resource
                     ->label('Registrar Pago Rápido')
                     ->icon('heroicon-o-banknotes')
                     ->color('success')
-                    ->visible(fn (Loan $record): bool => in_array($record->status, ['Activo', 'Vencido']))
+                    ->visible(fn (Loan $record): bool => in_array($record->status, [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE]))
                     ->form(fn (Loan $record) => [
                         Forms\Components\TextInput::make('amount')
                             ->label('Monto')
@@ -470,8 +477,13 @@ class LoanResource extends Resource
 
                         // If fully paid, update status and paid_date
                         if ($newBalance <= 0) {
-                            $updateData['status'] = 'Pagado';
+                            $updateData['status'] = Loan::STATUS_PAID;
                             $updateData['paid_date'] = now();
+
+                            // Return item to available
+                            if ($record->item) {
+                                $record->item->update(['status' => 'Disponible']);
+                            }
                         }
 
                         $record->update($updateData);
@@ -501,8 +513,8 @@ class LoanResource extends Resource
                         ->action(function (Collection $records): void {
                             $count = 0;
                             foreach ($records as $record) {
-                                if ($record->status === 'Activo') {
-                                    $record->update(['status' => 'Vencido']);
+                                if ($record->status === Loan::STATUS_ACTIVE) {
+                                    $record->update(['status' => Loan::STATUS_OVERDUE]);
                                     $count++;
                                 }
                             }

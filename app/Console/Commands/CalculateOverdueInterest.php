@@ -34,9 +34,10 @@ class CalculateOverdueInterest extends Command
         $this->info('Starting overdue interest calculation...');
 
         // Find all overdue loans
-        $overdueLoans = Loan::where('status', 'active')
+        $overdueLoans = Loan::where('status', Loan::STATUS_ACTIVE)
             ->where('due_date', '<', now()->startOfDay())
             ->where('balance_remaining', '>', 0)
+            ->with(['customer', 'item']) // Eager load to prevent N+1
             ->get();
 
         if ($overdueLoans->isEmpty()) {
@@ -86,7 +87,7 @@ class CalculateOverdueInterest extends Command
                 'balance_remaining' => $loan->balance_remaining + $dailyInterest,
                 'total_amount' => $loan->total_amount + $dailyInterest,
                 'interest_amount' => $loan->interest_amount + $dailyInterest,
-                'status' => 'overdue', // Update status to overdue if not already
+                'status' => Loan::STATUS_OVERDUE, // Update status to overdue if not already
             ]);
 
             $processedCount++;

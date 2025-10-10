@@ -89,9 +89,9 @@ class CreditScoreService
             return 0;
         }
 
-        $paidLoans = $customer->loans()->where('status', 'paid')->count();
-        $activeLoans = $customer->loans()->whereIn('status', ['active', 'pending'])->count();
-        $overdueLoans = $customer->loans()->where('status', 'overdue')->count();
+        $paidLoans = $customer->loans()->where('status', Loan::STATUS_PAID)->count();
+        $activeLoans = $customer->loans()->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_PENDING])->count();
+        $overdueLoans = $customer->loans()->where('status', Loan::STATUS_OVERDUE)->count();
 
         $score = 0;
 
@@ -116,8 +116,13 @@ class CreditScoreService
         }
 
         $currentBalance = $customer->loans()
-            ->whereIn('status', ['active', 'overdue', 'pending'])
+            ->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE, Loan::STATUS_PENDING])
             ->sum('balance_remaining');
+
+        // Safety check for division by zero
+        if ($creditLimit == 0) {
+            return $currentBalance > 0 ? -50 : 0;
+        }
 
         $utilizationRatio = $currentBalance / $creditLimit;
 

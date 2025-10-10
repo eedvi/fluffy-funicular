@@ -17,6 +17,13 @@ class Loan extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
 
+    // Status constants (English for DB, Spanish for display)
+    public const STATUS_ACTIVE = 'active';
+    public const STATUS_PAID = 'paid';
+    public const STATUS_OVERDUE = 'overdue';
+    public const STATUS_FORFEITED = 'forfeited';
+    public const STATUS_PENDING = 'pending';
+
     protected $fillable = [
         'loan_number',
         'customer_id',
@@ -94,20 +101,20 @@ class Loan extends Model
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('status', self::STATUS_ACTIVE);
     }
 
     public function scopeOverdue($query)
     {
-        return $query->where('status', 'overdue')->orWhere(function($q) {
-            $q->where('status', 'active')->where('due_date', '<', now());
+        return $query->where('status', self::STATUS_OVERDUE)->orWhere(function($q) {
+            $q->where('status', self::STATUS_ACTIVE)->where('due_date', '<', now());
         });
     }
 
     // Accessors
     public function getIsOverdueAttribute(): bool
     {
-        return in_array($this->status, ['active', 'pending']) && $this->due_date < now();
+        return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_PENDING]) && $this->due_date < now();
     }
 
     // Static methods

@@ -29,7 +29,7 @@ class UpdateOverdueLoans extends Command
         $this->info('Checking for overdue loans...');
 
         // Find all active loans that are past due date
-        $overdueLoans = Loan::where('status', 'Activo')
+        $overdueLoans = Loan::where('status', Loan::STATUS_ACTIVE)
             ->where('due_date', '<', now())
             ->get();
 
@@ -42,14 +42,14 @@ class UpdateOverdueLoans extends Command
 
         // Update each loan to overdue status
         foreach ($overdueLoans as $loan) {
-            $loan->update(['status' => 'Vencido']);
+            $loan->update(['status' => Loan::STATUS_OVERDUE]);
 
             // Log activity
             activity()
                 ->performedOn($loan)
                 ->withProperties([
-                    'old_status' => 'Activo',
-                    'new_status' => 'Vencido',
+                    'old_status' => Loan::STATUS_ACTIVE,
+                    'new_status' => Loan::STATUS_OVERDUE,
                     'due_date' => $loan->due_date->format('Y-m-d'),
                 ])
                 ->log("Préstamo marcado como vencido automáticamente");
