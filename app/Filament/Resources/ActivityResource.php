@@ -123,6 +123,7 @@ class ActivityResource extends Resource
     {
         return [
             'index' => Pages\ManageActivities::route('/'),
+            'view' => Pages\ViewActivity::route('/{record}'),
         ];
     }
 

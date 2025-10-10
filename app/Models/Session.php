@@ -33,6 +33,53 @@ class Session extends Model
     }
 
     /**
+     * Extract user_id from the serialized payload
+     * Handles both column value and payload extraction for compatibility
+     */
+    public function getUserIdAttribute($value)
+    {
+        // If user_id is already set in column, return it
+        if ($value) {
+            return $value;
+        }
+
+        // Otherwise, extract from payload (Laravel stores it here)
+        if (!isset($this->attributes['payload'])) {
+            return null;
+        }
+
+        try {
+            // Decode payload (Laravel base64 encodes it)
+            $payload = unserialize(base64_decode($this->attributes['payload']));
+
+            // Try different keys where Laravel might store user_id
+            // 'login_web_' . sha1(static class) is the default Laravel auth guard key
+            $userId = $payload['login_web_59ba36addc2b2f9401580f014c7f58ea4e30989d'] ?? null;
+
+            // Fallback to other possible keys
+            if (!$userId) {
+                $userId = $payload['_auth'] ?? null;
+            }
+
+            if (!$userId) {
+                // Try to find any key that looks like 'login_web_*'
+                foreach ($payload as $key => $val) {
+                    if (str_starts_with($key, 'login_web_')) {
+                        $userId = $val;
+                        break;
+                    }
+                }
+            }
+
+            return $userId;
+        } catch (\Exception $e) {
+            // Silently fail and return null if payload can't be decoded
+            \Log::debug('Failed to extract user_id from session payload: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Get the session's last activity as a datetime.
      */
     public function getLastActivityAttribute($value)
