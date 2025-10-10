@@ -134,11 +134,10 @@ return [
     */
 
     'service_worker' => [
-        'cache_name' => env('PWA_CACHE_NAME', 'filament-admin-v1.0.0'),
+        'cache_name' => env('PWA_CACHE_NAME', 'filament-admin-v1.0.1'),
         'offline_url' => env('PWA_OFFLINE_URL', '/offline'),
         'cache_urls' => [
             '/admin',
-            '/admin/login',
             '/manifest.json',
         ],
         'cache_patterns' => [

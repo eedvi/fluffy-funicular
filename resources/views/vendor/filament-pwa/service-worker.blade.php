@@ -83,23 +83,42 @@ self.addEventListener('fetch', event => {
 
 // Handle admin panel requests (Network First strategy)
 async function handleAdminRequest(request) {
+  const url = new URL(request.url);
+
+  // Never cache login, register, or password reset pages (they have CSRF tokens and forms)
+  const noCachePaths = ['/admin/login', '/admin/register', '/admin/password'];
+  const shouldNotCache = noCachePaths.some(path => url.pathname.startsWith(path));
+
   try {
     const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
+
+    // Only cache if response is OK and it's not a login/auth page
+    if (networkResponse.ok && !shouldNotCache) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.log('[SW] Network failed for admin request:', request.url);
-    
+
+    // Don't serve cached login pages
+    if (shouldNotCache) {
+      // Return offline page for login/auth pages when network is unavailable
+      if (request.mode === 'navigate') {
+        return caches.match(OFFLINE_URL) || new Response(
+          getOfflineHTML(),
+          { headers: { 'Content-Type': 'text/html' } }
+        );
+      }
+      throw error;
+    }
+
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // If no cache, return offline page for navigation requests
     if (request.mode === 'navigate') {
       return caches.match(OFFLINE_URL) || new Response(
@@ -107,7 +126,7 @@ async function handleAdminRequest(request) {
         { headers: { 'Content-Type': 'text/html' } }
       );
     }
-    
+
     throw error;
   }
 }
