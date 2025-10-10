@@ -26,39 +26,56 @@ class UpdateOverdueLoans extends Command
      */
     public function handle()
     {
-        $this->info('Checking for overdue loans...');
+        try {
+            $this->info('Checking for overdue loans...');
 
-        // Find all active loans that are past due date
-        $overdueLoans = Loan::where('status', Loan::STATUS_ACTIVE)
-            ->where('due_date', '<', now())
-            ->get();
+            // Find all active loans that are past due date
+            $overdueLoans = Loan::where('status', Loan::STATUS_ACTIVE)
+                ->where('due_date', '<', now())
+                ->get();
 
-        $count = $overdueLoans->count();
+            $count = $overdueLoans->count();
 
-        if ($count === 0) {
-            $this->info('No overdue loans found.');
+            if ($count === 0) {
+                $this->info('No overdue loans found.');
+                return 0;
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+
+            // Update each loan to overdue status
+            foreach ($overdueLoans as $loan) {
+                try {
+                    $loan->update(['status' => Loan::STATUS_OVERDUE]);
+
+                    // Log activity
+                    activity()
+                        ->performedOn($loan)
+                        ->withProperties([
+                            'old_status' => Loan::STATUS_ACTIVE,
+                            'new_status' => Loan::STATUS_OVERDUE,
+                            'due_date' => $loan->due_date->format('Y-m-d'),
+                        ])
+                        ->log("Préstamo marcado como vencido automáticamente");
+
+                    $this->line("Loan #{$loan->loan_number} marked as overdue");
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $this->error("Failed to update loan #{$loan->loan_number}: {$e->getMessage()}");
+                }
+            }
+
+            $this->info("Updated {$successCount} loan(s) to overdue status.");
+            if ($errorCount > 0) {
+                $this->warn("Failed to update {$errorCount} loan(s).");
+            }
+
             return 0;
+        } catch (\Exception $e) {
+            $this->error("Command failed: {$e->getMessage()}");
+            return 1;
         }
-
-        // Update each loan to overdue status
-        foreach ($overdueLoans as $loan) {
-            $loan->update(['status' => Loan::STATUS_OVERDUE]);
-
-            // Log activity
-            activity()
-                ->performedOn($loan)
-                ->withProperties([
-                    'old_status' => Loan::STATUS_ACTIVE,
-                    'new_status' => Loan::STATUS_OVERDUE,
-                    'due_date' => $loan->due_date->format('Y-m-d'),
-                ])
-                ->log("Préstamo marcado como vencido automáticamente");
-
-            $this->line("Loan #{$loan->loan_number} marked as overdue");
-        }
-
-        $this->info("Updated {$count} loan(s) to overdue status.");
-
-        return 0;
     }
 }

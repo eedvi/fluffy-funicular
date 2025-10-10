@@ -38,7 +38,7 @@ class LoanRenewalResource extends Resource
                             ->label('Préstamo')
                             ->relationship('loan', 'loan_number', function (Builder $query) {
                                 // Only show active or overdue loans that can be renewed
-                                return $query->whereIn('status', ['active', 'overdue']);
+                                return $query->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE]);
                             })
                             ->getOptionLabelFromRecordUsing(function ($record) {
                                 return $record->loan_number . ' - ' . $record->customer->full_name . ' ($' . number_format($record->loan_amount, 2) . ')';
@@ -314,6 +314,16 @@ class LoanRenewalResource extends Resource
         $loan = Loan::find($loanId);
         if (!$loan) {
             return;
+        }
+
+        // Validate loan_term_days to prevent division by zero
+        if (!$loan->loan_term_days || $loan->loan_term_days <= 0) {
+            // Fallback: use 30 days as default or calculate based on dates
+            $defaultTermDays = 30;
+            if ($loan->start_date && $loan->due_date) {
+                $defaultTermDays = $loan->start_date->diffInDays($loan->due_date) ?: 30;
+            }
+            $loan->loan_term_days = $defaultTermDays;
         }
 
         // Calculate interest based on loan amount and extension period

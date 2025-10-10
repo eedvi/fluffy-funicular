@@ -357,42 +357,44 @@ class LoanResource extends Resource
                             ->rows(2),
                     ])
                     ->action(function (Loan $record, array $data): void {
-                        $previousDueDate = $record->due_date;
-                        $extensionDays = (int) $data['extension_days'];
-                        $interestRate = (float) $data['interest_rate'];
-                        $renewalFee = (float) $data['renewal_fee'];
-                        $interestAmount = (float) $data['interest_amount'];
-                        $newDueDate = \Carbon\Carbon::parse($record->due_date)->addDays($extensionDays);
+                        \DB::transaction(function () use ($record, $data) {
+                            $previousDueDate = $record->due_date;
+                            $extensionDays = (int) $data['extension_days'];
+                            $interestRate = (float) $data['interest_rate'];
+                            $renewalFee = (float) $data['renewal_fee'];
+                            $interestAmount = (float) $data['interest_amount'];
+                            $newDueDate = \Carbon\Carbon::parse($record->due_date)->addDays($extensionDays);
 
-                        // Calculate total charges
-                        $totalCharges = $interestAmount + $renewalFee;
+                            // Calculate total charges
+                            $totalCharges = $interestAmount + $renewalFee;
 
-                        // Create loan renewal record
-                        \App\Models\LoanRenewal::create([
-                            'loan_id' => $record->id,
-                            'previous_due_date' => $previousDueDate,
-                            'new_due_date' => $newDueDate,
-                            'extension_days' => $extensionDays,
-                            'renewal_fee' => $renewalFee,
-                            'interest_rate' => $interestRate,
-                            'interest_amount' => $interestAmount,
-                            'notes' => $data['notes'] ?? null,
-                            'processed_by' => auth()->id(),
-                        ]);
+                            // Create loan renewal record
+                            \App\Models\LoanRenewal::create([
+                                'loan_id' => $record->id,
+                                'previous_due_date' => $previousDueDate,
+                                'new_due_date' => $newDueDate,
+                                'extension_days' => $extensionDays,
+                                'renewal_fee' => $renewalFee,
+                                'interest_rate' => $interestRate,
+                                'interest_amount' => $interestAmount,
+                                'notes' => $data['notes'] ?? null,
+                                'processed_by' => auth()->id(),
+                            ]);
 
-                        // Update loan
-                        $record->update([
-                            'due_date' => $newDueDate,
-                            'interest_amount' => $record->interest_amount + $interestAmount,
-                            'total_amount' => $record->total_amount + $totalCharges,
-                            'balance_remaining' => $record->balance_remaining + $totalCharges,
-                        ]);
+                            // Update loan
+                            $record->update([
+                                'due_date' => $newDueDate,
+                                'interest_amount' => $record->interest_amount + $interestAmount,
+                                'total_amount' => $record->total_amount + $totalCharges,
+                                'balance_remaining' => $record->balance_remaining + $totalCharges,
+                            ]);
 
-                        Notification::make()
-                            ->success()
-                            ->title('Préstamo Renovado')
-                            ->body("El préstamo {$record->loan_number} ha sido renovado exitosamente. Nueva fecha de vencimiento: " . $newDueDate->format('d/m/Y'))
-                            ->send();
+                            Notification::make()
+                                ->success()
+                                ->title('Préstamo Renovado')
+                                ->body("El préstamo {$record->loan_number} ha sido renovado exitosamente. Nueva fecha de vencimiento: " . $newDueDate->format('d/m/Y'))
+                                ->send();
+                        });
                     }),
 
                 // Confiscar Artículo
@@ -406,22 +408,24 @@ class LoanResource extends Resource
                     ->modalDescription('¿Está seguro de que desea confiscar este artículo? Esta acción actualizará el estado del préstamo a "Confiscado" y el artículo asociado también será marcado como confiscado.')
                     ->modalSubmitActionLabel('Sí, Confiscar')
                     ->action(function (Loan $record): void {
-                        $record->update([
-                            'status' => Loan::STATUS_FORFEITED,
-                            'forfeited_date' => now(),
-                        ]);
-
-                        if ($record->item) {
-                            $record->item->update([
-                                'status' => 'Confiscado', // Item model doesn't have constants yet
+                        \DB::transaction(function () use ($record) {
+                            $record->update([
+                                'status' => Loan::STATUS_FORFEITED,
+                                'forfeited_date' => now(),
                             ]);
-                        }
 
-                        Notification::make()
-                            ->warning()
-                            ->title('Artículo Confiscado')
-                            ->body("El artículo del préstamo {$record->loan_number} ha sido confiscado.")
-                            ->send();
+                            if ($record->item) {
+                                $record->item->update([
+                                    'status' => 'Confiscado', // Item model doesn't have constants yet
+                                ]);
+                            }
+
+                            Notification::make()
+                                ->warning()
+                                ->title('Artículo Confiscado')
+                                ->body("El artículo del préstamo {$record->loan_number} ha sido confiscado.")
+                                ->send();
+                        });
                     }),
 
                 // Registrar Pago Rápido
@@ -458,41 +462,44 @@ class LoanResource extends Resource
                             ->maxDate(now()),
                     ])
                     ->action(function (Loan $record, array $data): void {
-                        // Create payment record
-                        Payment::create([
-                            'loan_id' => $record->id,
-                            'payment_number' => Payment::generatePaymentNumber(),
-                            'amount' => $data['amount'],
-                            'payment_date' => $data['payment_date'],
-                            'payment_method' => $data['payment_method'],
-                            'status' => 'Completado',
-                        ]);
+                        \DB::transaction(function () use ($record, $data) {
+                            // Create payment record
+                            Payment::create([
+                                'loan_id' => $record->id,
+                                'payment_number' => Payment::generatePaymentNumber(),
+                                'amount' => $data['amount'],
+                                'payment_date' => $data['payment_date'],
+                                'payment_method' => $data['payment_method'],
+                                'status' => 'Completado',
+                                'branch_id' => $record->branch_id,
+                            ]);
 
-                        // Update loan balance
-                        $newBalance = $record->balance_remaining - $data['amount'];
+                            // Update loan balance
+                            $newBalance = $record->balance_remaining - $data['amount'];
 
-                        $updateData = [
-                            'balance_remaining' => max(0, $newBalance),
-                        ];
+                            $updateData = [
+                                'balance_remaining' => max(0, $newBalance),
+                            ];
 
-                        // If fully paid, update status and paid_date
-                        if ($newBalance <= 0) {
-                            $updateData['status'] = Loan::STATUS_PAID;
-                            $updateData['paid_date'] = now();
+                            // If fully paid, update status and paid_date
+                            if ($newBalance <= 0) {
+                                $updateData['status'] = Loan::STATUS_PAID;
+                                $updateData['paid_date'] = now();
 
-                            // Return item to available
-                            if ($record->item) {
-                                $record->item->update(['status' => 'Disponible']);
+                                // Return item to available
+                                if ($record->item) {
+                                    $record->item->update(['status' => 'Disponible']);
+                                }
                             }
-                        }
 
-                        $record->update($updateData);
+                            $record->update($updateData);
 
-                        Notification::make()
-                            ->success()
-                            ->title('Pago Registrado')
-                            ->body("El pago de $" . number_format($data['amount'], 2) . " ha sido registrado exitosamente.")
-                            ->send();
+                            Notification::make()
+                                ->success()
+                                ->title('Pago Registrado')
+                                ->body("El pago de $" . number_format($data['amount'], 2) . " ha sido registrado exitosamente.")
+                                ->send();
+                        });
                     }),
             ])
             ->bulkActions([
