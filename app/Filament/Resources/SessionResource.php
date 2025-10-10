@@ -28,15 +28,11 @@ class SessionResource extends Resource
 
     /**
      * Filter query to show only authenticated sessions
+     * Now uses the user_id column which is automatically populated on login
      */
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
-            ->where(function ($query) {
-                // Filter sessions that have authentication data in payload
-                $query->whereRaw("payload LIKE '%login_web_%'")
-                      ->orWhereRaw("payload LIKE '%_auth%'");
-            });
+        return parent::getEloquentQuery()->whereNotNull('user_id');
     }
 
     public static function form(Form $form): Form
