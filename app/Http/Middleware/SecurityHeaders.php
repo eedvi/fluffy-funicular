@@ -17,6 +17,21 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // Force no-cache for authentication pages to prevent POST method errors
+        // This is CRITICAL to prevent Cloudflare/CDN from caching login pages
+        if ($request->is('admin/login*') ||
+            $request->is('admin/register*') ||
+            $request->is('admin/password*')) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', 'Mon, 01 Jan 1990 00:00:00 GMT');
+            // Tell Cloudflare to NEVER cache this
+            $response->headers->set('CDN-Cache-Control', 'no-store');
+            $response->headers->set('Cloudflare-CDN-Cache-Control', 'no-store');
+            // Vary to prevent shared cache
+            $response->headers->set('Vary', 'Cookie');
+        }
+
         // Only apply security headers if enabled in config
         if (config('security.headers_enabled', true)) {
             // HTTP Strict Transport Security (HSTS)

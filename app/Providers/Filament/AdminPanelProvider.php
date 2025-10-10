@@ -116,34 +116,36 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
-                FilamentPwaPlugin::make()
-                    ->name('Sistema de Empeño')
-                    ->shortName('Empeño')
-                    ->description('Sistema de gestión de casa de empeño')
-                    ->themeColor('#f59e0b')
-                    ->backgroundColor('#ffffff')
-                    ->orientation('portrait-primary')
-                    ->standalone()
-                    ->shortcuts([
-                        [
-                            'name' => 'Nuevo Préstamo',
-                            'shortName' => 'Préstamo',
-                            'description' => 'Crear un nuevo préstamo',
-                            'url' => '/admin/loans/create',
-                        ],
-                        [
-                            'name' => 'Nueva Venta',
-                            'shortName' => 'Venta',
-                            'description' => 'Registrar una nueva venta',
-                            'url' => '/admin/sales/create',
-                        ],
-                        [
-                            'name' => 'Nuevo Artículo',
-                            'shortName' => 'Artículo',
-                            'description' => 'Agregar un nuevo artículo',
-                            'url' => '/admin/items/create',
-                        ],
-                    ]),
+                // PWA temporarily disabled to debug login issues
+                // Will re-enable once cache issues are resolved
+                // FilamentPwaPlugin::make()
+                //     ->name('Sistema de Empeño')
+                //     ->shortName('Empeño')
+                //     ->description('Sistema de gestión de casa de empeño')
+                //     ->themeColor('#f59e0b')
+                //     ->backgroundColor('#ffffff')
+                //     ->orientation('portrait-primary')
+                //     ->standalone()
+                //     ->shortcuts([
+                //         [
+                //             'name' => 'Nuevo Préstamo',
+                //             'shortName' => 'Préstamo',
+                //             'description' => 'Crear un nuevo préstamo',
+                //             'url' => '/admin/loans/create',
+                //         ],
+                //         [
+                //             'name' => 'Nueva Venta',
+                //             'shortName' => 'Venta',
+                //             'description' => 'Registrar una nueva venta',
+                //             'url' => '/admin/sales/create',
+                //         ],
+                //         [
+                //             'name' => 'Nuevo Artículo',
+                //             'shortName' => 'Artículo',
+                //             'description' => 'Agregar un nuevo artículo',
+                //             'url' => '/admin/items/create',
+                //         ],
+                //     ]),
             ])
             ->authMiddleware([
                 Authenticate::class,
