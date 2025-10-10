@@ -23,6 +23,9 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Filament\Facades\Filament;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\Blade;
 
 class AdminPanelProvider extends PanelProvider
 {   
@@ -42,6 +45,39 @@ class AdminPanelProvider extends PanelProvider
             set_time_limit(300);
             ini_set('memory_limit', '512M');
         });
+
+        // Emergency service worker cleanup on login page
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): string => Blade::render(<<<'HTML'
+                <script>
+                    // Emergency cleanup for service worker on login page
+                    if (window.location.pathname === '/admin/login' && 'serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                            for (let registration of registrations) {
+                                // Check if this is our problematic service worker
+                                registration.unregister().then(function(success) {
+                                    if (success) {
+                                        console.log('[Emergency] Old service worker removed');
+                                        // Clear caches
+                                        if ('caches' in window) {
+                                            caches.keys().then(function(names) {
+                                                names.forEach(name => {
+                                                    if (name.includes('filament-admin-v1.0.0')) {
+                                                        caches.delete(name);
+                                                        console.log('[Emergency] Deleted old cache:', name);
+                                                    }
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                </script>
+            HTML)
+        );
     }
     public function panel(Panel $panel): Panel
     {   
