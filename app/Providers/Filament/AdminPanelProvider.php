@@ -4,6 +4,7 @@ namespace App\Providers\Filament;
 
 use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+use Alareqi\FilamentPwa\FilamentPwaPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -36,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
                 ->deferLoading()
                 ->striped();
         });
+
         Filament::serving(function () {
             set_time_limit(300);
             ini_set('memory_limit', '512M');
@@ -78,6 +80,34 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                FilamentPwaPlugin::make()
+                    ->name('Sistema de Empeño')
+                    ->shortName('Empeño')
+                    ->description('Sistema de gestión de casa de empeño')
+                    ->themeColor('#f59e0b')
+                    ->backgroundColor('#ffffff')
+                    ->orientation('portrait-primary')
+                    ->standalone()
+                    ->shortcuts([
+                        [
+                            'name' => 'Nuevo Préstamo',
+                            'shortName' => 'Préstamo',
+                            'description' => 'Crear un nuevo préstamo',
+                            'url' => '/admin/loans/create',
+                        ],
+                        [
+                            'name' => 'Nueva Venta',
+                            'shortName' => 'Venta',
+                            'description' => 'Registrar una nueva venta',
+                            'url' => '/admin/sales/create',
+                        ],
+                        [
+                            'name' => 'Nuevo Artículo',
+                            'shortName' => 'Artículo',
+                            'description' => 'Agregar un nuevo artículo',
+                            'url' => '/admin/items/create',
+                        ],
+                    ]),
             ])
             ->authMiddleware([
                 Authenticate::class,

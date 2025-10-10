@@ -21,7 +21,7 @@ class Item extends Model
     protected $fillable = [
         'name',
         'description',
-        'category',
+        'category_id',
         'brand',
         'model',
         'serial_number',
@@ -62,7 +62,7 @@ class Item extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'category', 'status', 'appraised_value'])
+            ->logOnly(['name', 'category_id', 'status', 'appraised_value'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }
@@ -71,6 +71,11 @@ class Item extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
     }
 
     public function loans(): HasMany

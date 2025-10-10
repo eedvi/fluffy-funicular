@@ -39,14 +39,28 @@ class ItemResource extends Resource
                                     ->required()
                                     ->maxLength(200)
                                     ->columnSpan(2),
-                                Forms\Components\Select::make('category')
+                                Forms\Components\Select::make('category_id')
                                     ->label('Categoría')
+                                    ->relationship('category', 'name', function (Builder $query) {
+                                        return $query->where('is_active', true)->ordered();
+                                    })
                                     ->required()
-                                    ->options([
-                                        'Joyería' => 'Joyería',
-                                        'Electrónica' => 'Electrónica',
-                                        'Herramientas' => 'Herramientas',
-                                        'Otros' => 'Otros',
+                                    ->searchable()
+                                    ->preload()
+                                    ->createOptionForm([
+                                        Forms\Components\TextInput::make('name')
+                                            ->label('Nombre')
+                                            ->required()
+                                            ->maxLength(255)
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('slug', \Illuminate\Support\Str::slug($state))),
+                                        Forms\Components\TextInput::make('slug')
+                                            ->label('Slug')
+                                            ->required()
+                                            ->maxLength(255),
+                                        Forms\Components\Toggle::make('is_active')
+                                            ->label('Activa')
+                                            ->default(true),
                                     ])
                                     ->native(false),
                                 Forms\Components\Select::make('condition')
@@ -170,17 +184,12 @@ class ItemResource extends Resource
                     ->color('info')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('category')
+                Tables\Columns\TextColumn::make('category.name')
                     ->label('Categoría')
                     ->searchable()
                     ->sortable()
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'Joyería' => 'warning',
-                        'Electrónica' => 'info',
-                        'Herramientas' => 'success',
-                        default => 'gray',
-                    }),
+                    ->color(fn ($record): string => $record->category?->color ?? 'gray'),
                 Tables\Columns\TextColumn::make('brand')
                     ->label('Marca')
                     ->searchable()
@@ -228,14 +237,13 @@ class ItemResource extends Resource
                         'Confiscado' => 'Confiscado',
                     ])
                     ->multiple(),
-                Tables\Filters\SelectFilter::make('category')
+                Tables\Filters\SelectFilter::make('category_id')
                     ->label('Categoría')
-                    ->options([
-                        'Joyería' => 'Joyería',
-                        'Electrónica' => 'Electrónica',
-                        'Herramientas' => 'Herramientas',
-                        'Otros' => 'Otros',
-                    ])
+                    ->relationship('category', 'name', function (Builder $query) {
+                        return $query->where('is_active', true)->ordered();
+                    })
+                    ->preload()
+                    ->searchable()
                     ->multiple(),
                 TrashedFilter::make(),
             ])
