@@ -160,7 +160,7 @@ class ActivityResource extends Resource
                     ->label('Usuario')
                     ->relationship('causer', 'name')
                     ->searchable(['name', 'email'])
-                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->name)
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record?->name ?? 'Sistema')
                     ->preload(),
 
                 Tables\Filters\Filter::make('created_at')
