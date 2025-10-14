@@ -165,6 +165,7 @@ class LoanResource extends Resource
                                     ->label('Estado')
                                     ->required()
                                     ->options([
+                                        Loan::STATUS_PENDING => 'Pendiente',
                                         Loan::STATUS_ACTIVE => 'Activo',
                                         Loan::STATUS_PAID => 'Pagado',
                                         Loan::STATUS_OVERDUE => 'Vencido',
@@ -249,6 +250,7 @@ class LoanResource extends Resource
                     ->sortable()
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Loan::STATUS_PENDING => 'Pendiente',
                         Loan::STATUS_ACTIVE => 'Activo',
                         Loan::STATUS_PAID => 'Pagado',
                         Loan::STATUS_OVERDUE => 'Vencido',
@@ -256,6 +258,7 @@ class LoanResource extends Resource
                         default => $state,
                     })
                     ->color(fn (string $state): string => match ($state) {
+                        Loan::STATUS_PENDING => 'gray',
                         Loan::STATUS_ACTIVE => 'success',
                         Loan::STATUS_PAID => 'info',
                         Loan::STATUS_OVERDUE => 'warning',
@@ -416,7 +419,7 @@ class LoanResource extends Resource
 
                             if ($record->item) {
                                 $record->item->update([
-                                    'status' => 'Confiscado', // Item model doesn't have constants yet
+                                    'status' => 'forfeited',
                                 ]);
                             }
 
@@ -488,7 +491,7 @@ class LoanResource extends Resource
 
                                 // Return item to available
                                 if ($record->item) {
-                                    $record->item->update(['status' => 'Disponible']);
+                                    $record->item->update(['status' => 'available']);
                                 }
                             }
 

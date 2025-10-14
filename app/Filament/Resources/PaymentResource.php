@@ -95,14 +95,12 @@ class PaymentResource extends Resource
                                     ->label('Método de Pago')
                                     ->required()
                                     ->options([
-                                        'Efectivo' => 'Efectivo',
-                                        'Transferencia' => 'Transferencia',
-                                        'Tarjeta de Débito' => 'Tarjeta de Débito',
-                                        'Tarjeta de Crédito' => 'Tarjeta de Crédito',
-                                        'Cheque' => 'Cheque',
-                                        'Otro' => 'Otro',
+                                        'cash' => 'Efectivo',
+                                        'card' => 'Tarjeta',
+                                        'transfer' => 'Transferencia',
+                                        'check' => 'Cheque',
                                     ])
-                                    ->default('Efectivo')
+                                    ->default('cash')
                                     ->native(false),
                             ]),
                     ]),
@@ -119,12 +117,11 @@ class PaymentResource extends Resource
                                     ->label('Estado')
                                     ->required()
                                     ->options([
-                                        'Completado' => 'Completado',
-                                        'Pendiente' => 'Pendiente',
-                                        'Rechazado' => 'Rechazado',
-                                        'Cancelado' => 'Cancelado',
+                                        'completed' => 'Completado',
+                                        'pending' => 'Pendiente',
+                                        'cancelled' => 'Cancelado',
                                     ])
-                                    ->default('Completado')
+                                    ->default('completed')
                                     ->native(false),
                             ]),
                         Forms\Components\Textarea::make('notes')
@@ -170,10 +167,18 @@ class PaymentResource extends Resource
                     ->searchable()
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Efectivo' => 'success',
-                        'Transferencia' => 'info',
-                        'Tarjeta de Débito', 'Tarjeta de Crédito' => 'warning',
+                        'cash' => 'success',
+                        'transfer' => 'info',
+                        'card' => 'warning',
+                        'check' => 'gray',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'cash' => 'Efectivo',
+                        'card' => 'Tarjeta',
+                        'transfer' => 'Transferencia',
+                        'check' => 'Cheque',
+                        default => $state,
                     }),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -181,11 +186,16 @@ class PaymentResource extends Resource
                     ->sortable()
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Completado' => 'success',
-                        'Pendiente' => 'warning',
-                        'Rechazado' => 'danger',
-                        'Cancelado' => 'gray',
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'cancelled' => 'gray',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'completed' => 'Completado',
+                        'pending' => 'Pendiente',
+                        'cancelled' => 'Cancelado',
+                        default => $state,
                     }),
             ])
             ->filters([

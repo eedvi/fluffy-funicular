@@ -47,7 +47,7 @@ class SaleResource extends Resource
                                 Forms\Components\Select::make('item_id')
                                     ->label('Artículo')
                                     ->relationship('item', 'name', fn (Builder $query) =>
-                                        $query->whereIn('status', ['Disponible', 'Confiscado'])
+                                        $query->whereIn('status', ['available', 'forfeited'])
                                     )
                                     ->searchable()
                                     ->required()
@@ -118,24 +118,23 @@ class SaleResource extends Resource
                                     ->label('Método de Pago')
                                     ->required()
                                     ->options([
-                                        'Efectivo' => 'Efectivo',
-                                        'Transferencia' => 'Transferencia',
-                                        'Tarjeta de Débito' => 'Tarjeta de Débito',
-                                        'Tarjeta de Crédito' => 'Tarjeta de Crédito',
-                                        'Cheque' => 'Cheque',
-                                        'Otro' => 'Otro',
+                                        'cash' => 'Efectivo',
+                                        'card' => 'Tarjeta',
+                                        'transfer' => 'Transferencia',
+                                        'financing' => 'Financiamiento',
                                     ])
-                                    ->default('Efectivo')
+                                    ->default('cash')
                                     ->native(false),
                                 Forms\Components\Select::make('status')
                                     ->label('Estado')
                                     ->required()
                                     ->options([
-                                        'Completada' => 'Completada',
-                                        'Pendiente' => 'Pendiente',
-                                        'Cancelada' => 'Cancelada',
+                                        'pending' => 'Pendiente',
+                                        'paid' => 'Pagada',
+                                        'delivered' => 'Entregada',
+                                        'cancelled' => 'Cancelada',
                                     ])
-                                    ->default('Completada')
+                                    ->default('pending')
                                     ->native(false),
                             ]),
                         Forms\Components\Grid::make(2)
@@ -210,10 +209,18 @@ class SaleResource extends Resource
                     ->sortable()
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Completada' => 'success',
-                        'Pendiente' => 'warning',
-                        'Cancelada' => 'danger',
+                        'pending' => 'warning',
+                        'paid' => 'info',
+                        'delivered' => 'success',
+                        'cancelled' => 'danger',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => 'Pendiente',
+                        'paid' => 'Pagada',
+                        'delivered' => 'Entregada',
+                        'cancelled' => 'Cancelada',
+                        default => $state,
                     }),
                 Tables\Columns\TextColumn::make('sale_date')
                     ->label('Fecha')

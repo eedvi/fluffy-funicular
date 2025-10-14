@@ -67,12 +67,12 @@ class ItemResource extends Resource
                                     ->label('Condición')
                                     ->required()
                                     ->options([
-                                        'Nuevo' => 'Nuevo',
-                                        'Excelente' => 'Excelente',
-                                        'Bueno' => 'Bueno',
-                                        'Regular' => 'Regular',
-                                        'Dañado' => 'Dañado',
+                                        'excellent' => 'Excelente',
+                                        'good' => 'Bueno',
+                                        'fair' => 'Regular',
+                                        'poor' => 'Malo',
                                     ])
+                                    ->default('good')
                                     ->native(false),
                                 Forms\Components\TextInput::make('brand')
                                     ->label('Marca')
@@ -136,12 +136,12 @@ class ItemResource extends Resource
                                     ->label('Estado')
                                     ->required()
                                     ->options([
-                                        'Disponible' => 'Disponible',
-                                        'En Préstamo' => 'En Préstamo',
-                                        'Vendido' => 'Vendido',
-                                        'Confiscado' => 'Confiscado',
+                                        'available' => 'Disponible',
+                                        'collateral' => 'En Préstamo',
+                                        'sold' => 'Vendido',
+                                        'forfeited' => 'Confiscado',
                                     ])
-                                    ->default('Disponible')
+                                    ->default('available')
                                     ->native(false),
                                 Forms\Components\DatePicker::make('acquired_date')
                                     ->label('Fecha de Adquisición')
@@ -209,11 +209,18 @@ class ItemResource extends Resource
                     ->sortable()
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'Disponible' => 'success',
-                        'En Préstamo' => 'warning',
-                        'Vendido' => 'info',
-                        'Confiscado' => 'danger',
+                        'available' => 'success',
+                        'collateral' => 'warning',
+                        'sold' => 'info',
+                        'forfeited' => 'danger',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'available' => 'Disponible',
+                        'collateral' => 'En Préstamo',
+                        'sold' => 'Vendido',
+                        'forfeited' => 'Confiscado',
+                        default => $state,
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha de Creación')
@@ -231,10 +238,10 @@ class ItemResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Estado')
                     ->options([
-                        'Disponible' => 'Disponible',
-                        'En Préstamo' => 'En Préstamo',
-                        'Vendido' => 'Vendido',
-                        'Confiscado' => 'Confiscado',
+                        'available' => 'Disponible',
+                        'collateral' => 'En Préstamo',
+                        'sold' => 'Vendido',
+                        'forfeited' => 'Confiscado',
                     ])
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('category_id')
@@ -260,10 +267,10 @@ class ItemResource extends Resource
                             Forms\Components\Select::make('status')
                                 ->label('Nuevo Estado')
                                 ->options([
-                                    'Disponible' => 'Disponible',
-                                    'En Préstamo' => 'En Préstamo',
-                                    'Vendido' => 'Vendido',
-                                    'Confiscado' => 'Confiscado',
+                                    'available' => 'Disponible',
+                                    'collateral' => 'En Préstamo',
+                                    'sold' => 'Vendido',
+                                    'forfeited' => 'Confiscado',
                                 ])
                                 ->required(),
                         ])
