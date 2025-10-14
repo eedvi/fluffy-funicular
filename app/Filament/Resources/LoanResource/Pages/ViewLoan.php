@@ -16,6 +16,12 @@ class ViewLoan extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
+            Actions\Action::make('print_contract')
+                ->label('Imprimir Contrato')
+                ->icon('heroicon-o-document-text')
+                ->color('primary')
+                ->url(fn ($record) => route('pdf.loan-contract', $record))
+                ->openUrlInNewTab(),
             Actions\Action::make('print_receipt')
                 ->label('Imprimir Recibo')
                 ->icon('heroicon-o-printer')
@@ -70,7 +76,7 @@ class ViewLoan extends ViewRecord
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('item.name')
                                 ->label('Artículo'),
-                            Infolists\Components\TextEntry::make('item.category')
+                            Infolists\Components\TextEntry::make('item.category.name')
                                 ->label('Categoría'),
                             Infolists\Components\TextEntry::make('item.appraised_value')
                                 ->label('Valor Tasado')

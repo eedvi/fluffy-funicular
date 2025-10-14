@@ -292,9 +292,17 @@ class LoanResource extends Resource
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
 
+                // Imprimir Contrato
+                Tables\Actions\Action::make('imprimir_contrato')
+                    ->label('Contrato')
+                    ->icon('heroicon-o-document-text')
+                    ->color('primary')
+                    ->url(fn (Loan $record): string => route('pdf.loan-contract', $record))
+                    ->openUrlInNewTab(),
+
                 // Imprimir Recibo
                 Tables\Actions\Action::make('imprimir_recibo')
-                    ->label('Imprimir Recibo')
+                    ->label('Recibo')
                     ->icon('heroicon-o-printer')
                     ->color('gray')
                     ->url(fn (Loan $record): string => route('pdf.loan-receipt', $record))

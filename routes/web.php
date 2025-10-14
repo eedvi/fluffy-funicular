@@ -10,6 +10,8 @@ Route::get('/', function () {
 // PDF Routes
 Route::middleware(['auth'])->group(function () {
     // Loan PDFs
+    Route::get('/pdf/loan-contract/{loan}', [PdfController::class, 'loanContract'])->name('pdf.loan-contract');
+    Route::get('/pdf/loan-contract/{loan}/download', [PdfController::class, 'downloadLoanContract'])->name('pdf.loan-contract.download');
     Route::get('/pdf/loan-receipt/{loan}', [PdfController::class, 'loanReceipt'])->name('pdf.loan-receipt');
     Route::get('/pdf/loan-receipt/{loan}/download', [PdfController::class, 'downloadLoanReceipt'])->name('pdf.loan-receipt.download');
 

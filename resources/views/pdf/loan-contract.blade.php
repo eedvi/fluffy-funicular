@@ -120,7 +120,7 @@
             </tr>
             <tr>
                 <td>Categoría:</td>
-                <td>{{ $loan->item->category }}</td>
+                <td>{{ $loan->item->category->name }}</td>
             </tr>
             @if($loan->item->brand)
             <tr>

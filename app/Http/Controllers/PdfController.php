@@ -11,6 +11,30 @@ use Illuminate\Http\Response;
 class PdfController extends Controller
 {
     /**
+     * Generate loan contract PDF
+     */
+    public function loanContract(Loan $loan): Response
+    {
+        $loan->load(['customer', 'item.category', 'branch']);
+
+        $pdf = Pdf::loadView('pdf.loan-contract', compact('loan'));
+
+        return $pdf->stream('contrato-prestamo-' . $loan->loan_number . '.pdf');
+    }
+
+    /**
+     * Download loan contract PDF
+     */
+    public function downloadLoanContract(Loan $loan): Response
+    {
+        $loan->load(['customer', 'item.category', 'branch']);
+
+        $pdf = Pdf::loadView('pdf.loan-contract', compact('loan'));
+
+        return $pdf->download('contrato-prestamo-' . $loan->loan_number . '.pdf');
+    }
+
+    /**
      * Generate loan receipt PDF
      */
     public function loanReceipt(Loan $loan): Response
@@ -42,6 +66,8 @@ class PdfController extends Controller
     public function paymentReceipt(Payment $payment): Response
     {
         $payment->load(['loan.customer', 'loan.item', 'branch']);
+        // Refresh loan to get updated amount_paid and balance_remaining
+        $payment->loan->refresh();
         $branch = $payment->branch;
 
         $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
@@ -55,6 +81,8 @@ class PdfController extends Controller
     public function downloadPaymentReceipt(Payment $payment): Response
     {
         $payment->load(['loan.customer', 'loan.item', 'branch']);
+        // Refresh loan to get updated amount_paid and balance_remaining
+        $payment->loan->refresh();
         $branch = $payment->branch;
 
         $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
