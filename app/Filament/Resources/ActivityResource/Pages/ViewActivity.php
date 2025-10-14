@@ -72,52 +72,50 @@ class ViewActivity extends ViewRecord
                     ->columns(2)
                     ->collapsible(),
 
-                Components\Section::make('Datos Originales')
+                Components\Section::make('Cambios Realizados')
                     ->schema([
-                        Components\TextEntry::make('properties.old')
-                            ->label('Valores Anteriores')
-                            ->formatStateUsing(function ($state) {
-                                if (empty($state)) {
-                                    return 'N/A';
-                                }
-                                return collect($state)
-                                    ->map(fn ($value, $key) => "**{$key}:** " . (is_array($value) ? json_encode($value) : $value))
-                                    ->join("\n\n");
-                            })
-                            ->markdown()
+                        Components\ViewField::make('changes')
+                            ->label('')
+                            ->view('filament.components.activity-changes')
                             ->columnSpanFull(),
                     ])
                     ->collapsible()
-                    ->visible(fn ($record) => !empty($record->properties['old'] ?? [])),
-
-                Components\Section::make('Datos Nuevos')
-                    ->schema([
-                        Components\TextEntry::make('properties.attributes')
-                            ->label('Valores Nuevos')
-                            ->formatStateUsing(function ($state) {
-                                if (empty($state)) {
-                                    return 'N/A';
-                                }
-                                return collect($state)
-                                    ->map(fn ($value, $key) => "**{$key}:** " . (is_array($value) ? json_encode($value) : $value))
-                                    ->join("\n\n");
-                            })
-                            ->markdown()
-                            ->columnSpanFull(),
-                    ])
-                    ->collapsible()
-                    ->visible(fn ($record) => !empty($record->properties['attributes'] ?? [])),
+                    ->visible(fn ($record) => !empty($record->properties['old'] ?? []) || !empty($record->properties['attributes'] ?? [])),
             ]);
     }
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\Action::make('back')
-                ->label('Volver')
-                ->url(ActivityResource::getUrl('index'))
-                ->icon('heroicon-o-arrow-left')
-                ->color('gray'),
-        ];
+        $record = $this->getRecord();
+        $actions = [];
+
+        // Add action to view the related record
+        if ($record->subject_id) {
+            $subjectType = class_basename($record->subject_type);
+            $url = match ($subjectType) {
+                'Loan' => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $record->subject_id]),
+                'Customer' => \App\Filament\Resources\CustomerResource::getUrl('view', ['record' => $record->subject_id]),
+                'Item' => \App\Filament\Resources\ItemResource::getUrl('view', ['record' => $record->subject_id]),
+                'Sale' => \App\Filament\Resources\SaleResource::getUrl('view', ['record' => $record->subject_id]),
+                default => null,
+            };
+
+            if ($url) {
+                $actions[] = Actions\Action::make('view_record')
+                    ->label('Ver Registro Original')
+                    ->url($url)
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('info')
+                    ->openUrlInNewTab();
+            }
+        }
+
+        $actions[] = Actions\Action::make('back')
+            ->label('Volver')
+            ->url(ActivityResource::getUrl('index'))
+            ->icon('heroicon-o-arrow-left')
+            ->color('gray');
+
+        return $actions;
     }
 }

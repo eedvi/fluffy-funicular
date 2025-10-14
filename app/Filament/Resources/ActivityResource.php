@@ -35,16 +35,37 @@ class ActivityResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('description')
-                    ->label('Descripción')
-                    ->searchable()
-                    ->limit(50)
-                    ->tooltip(fn ($record) => $record->description),
+                Tables\Columns\TextColumn::make('event')
+                    ->label('Acción')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'created' => 'success',
+                        'updated' => 'info',
+                        'deleted' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'created' => 'Creado',
+                        'updated' => 'Actualizado',
+                        'deleted' => 'Eliminado',
+                        default => ucfirst($state),
+                    })
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('subject_type')
-                    ->label('Tipo de Registro')
+                    ->label('Módulo')
                     ->searchable()
-                    ->formatStateUsing(fn (string $state): string => class_basename($state))
+                    ->formatStateUsing(fn (string $state): string => match (class_basename($state)) {
+                        'Loan' => 'Préstamo',
+                        'Customer' => 'Cliente',
+                        'Item' => 'Artículo',
+                        'Payment' => 'Pago',
+                        'Sale' => 'Venta',
+                        'ItemTransfer' => 'Transferencia',
+                        'Branch' => 'Sucursal',
+                        'Category' => 'Categoría',
+                        default => class_basename($state),
+                    })
                     ->badge()
                     ->color(fn (string $state): string => match (class_basename($state)) {
                         'Loan' => 'success',
@@ -52,51 +73,103 @@ class ActivityResource extends Resource
                         'Item' => 'warning',
                         'Payment' => 'primary',
                         'Sale' => 'danger',
+                        'ItemTransfer' => 'purple',
+                        'Branch' => 'gray',
+                        'Category' => 'orange',
                         default => 'gray',
                     })
-                    ->toggleable(),
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('description')
+                    ->label('Descripción')
+                    ->searchable()
+                    ->limit(60)
+                    ->tooltip(fn ($record) => $record->description)
+                    ->formatStateUsing(function ($record) {
+                        $subjectType = class_basename($record->subject_type);
+                        $event = match ($record->event) {
+                            'created' => 'creó',
+                            'updated' => 'actualizó',
+                            'deleted' => 'eliminó',
+                            default => $record->event,
+                        };
+                        $module = match ($subjectType) {
+                            'Loan' => 'préstamo',
+                            'Customer' => 'cliente',
+                            'Item' => 'artículo',
+                            'Payment' => 'pago',
+                            'Sale' => 'venta',
+                            'ItemTransfer' => 'transferencia',
+                            'Branch' => 'sucursal',
+                            'Category' => 'categoría',
+                            default => strtolower($subjectType),
+                        };
+
+                        $identifier = $record->subject_id ? " #{$record->subject_id}" : '';
+                        return ucfirst("{$event} {$module}{$identifier}");
+                    }),
 
                 Tables\Columns\TextColumn::make('causer.name')
                     ->label('Usuario')
                     ->searchable()
                     ->sortable()
-                    ->default('Sistema'),
+                    ->default('Sistema')
+                    ->icon('heroicon-m-user'),
 
                 Tables\Columns\TextColumn::make('properties.ip')
                     ->label('IP')
                     ->searchable()
                     ->toggleable()
                     ->default('N/A')
-                    ->icon('heroicon-m-globe-alt'),
-
-                Tables\Columns\TextColumn::make('properties.user_agent')
-                    ->label('Navegador/Dispositivo')
-                    ->limit(30)
-                    ->tooltip(fn ($record) => $record->properties['user_agent'] ?? '')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->icon('heroicon-m-globe-alt')
+                    ->copyable()
+                    ->copyMessage('IP copiada'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Fecha')
                     ->dateTime('d/m/Y H:i:s')
-                    ->sortable(),
+                    ->sortable()
+                    ->since()
+                    ->tooltip(fn ($record) => $record->created_at->format('d/m/Y H:i:s')),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('event')
+                    ->label('Acción')
+                    ->options([
+                        'created' => 'Creado',
+                        'updated' => 'Actualizado',
+                        'deleted' => 'Eliminado',
+                    ])
+                    ->multiple(),
+
                 Tables\Filters\SelectFilter::make('subject_type')
-                    ->label('Tipo de Registro')
+                    ->label('Módulo')
                     ->options([
                         'App\\Models\\Loan' => 'Préstamo',
                         'App\\Models\\Customer' => 'Cliente',
                         'App\\Models\\Item' => 'Artículo',
                         'App\\Models\\Payment' => 'Pago',
                         'App\\Models\\Sale' => 'Venta',
-                    ]),
+                        'App\\Models\\ItemTransfer' => 'Transferencia',
+                        'App\\Models\\Branch' => 'Sucursal',
+                        'App\\Models\\Category' => 'Categoría',
+                    ])
+                    ->multiple(),
+
+                Tables\Filters\SelectFilter::make('causer_id')
+                    ->label('Usuario')
+                    ->relationship('causer', 'name')
+                    ->searchable()
+                    ->preload(),
 
                 Tables\Filters\Filter::make('created_at')
                     ->form([
                         \Filament\Forms\Components\DatePicker::make('created_from')
-                            ->label('Desde'),
+                            ->label('Desde')
+                            ->native(false),
                         \Filament\Forms\Components\DatePicker::make('created_until')
-                            ->label('Hasta'),
+                            ->label('Hasta')
+                            ->native(false),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -108,10 +181,50 @@ class ActivityResource extends Resource
                                 $data['created_until'],
                                 fn ($query, $date) => $query->whereDate('created_at', '<=', $date)
                             );
+                    })
+                    ->indicateUsing(function (array $data): array {
+                        $indicators = [];
+                        if ($data['created_from'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Desde ' . \Carbon\Carbon::parse($data['created_from'])->format('d/m/Y'))
+                                ->removeField('created_from');
+                        }
+                        if ($data['created_until'] ?? null) {
+                            $indicators[] = Tables\Filters\Indicator::make('Hasta ' . \Carbon\Carbon::parse($data['created_until'])->format('d/m/Y'))
+                                ->removeField('created_until');
+                        }
+                        return $indicators;
                     }),
             ])
+            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
+            ->persistFiltersInSession()
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                Tables\Actions\ViewAction::make()
+                    ->label('Ver Detalles')
+                    ->icon('heroicon-m-eye'),
+
+                Tables\Actions\Action::make('view_record')
+                    ->label('Ver Registro')
+                    ->icon('heroicon-m-arrow-top-right-on-square')
+                    ->color('info')
+                    ->url(function ($record) {
+                        $subjectType = class_basename($record->subject_type);
+                        $subjectId = $record->subject_id;
+
+                        if (!$subjectId) {
+                            return null;
+                        }
+
+                        return match ($subjectType) {
+                            'Loan' => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $subjectId]),
+                            'Customer' => \App\Filament\Resources\CustomerResource::getUrl('view', ['record' => $subjectId]),
+                            'Item' => \App\Filament\Resources\ItemResource::getUrl('view', ['record' => $subjectId]),
+                            'Payment' => \App\Filament\Resources\PaymentResource::getUrl('index'),
+                            'Sale' => \App\Filament\Resources\SaleResource::getUrl('view', ['record' => $subjectId]),
+                            default => null,
+                        };
+                    })
+                    ->openUrlInNewTab()
+                    ->visible(fn ($record) => $record->subject_id && in_array(class_basename($record->subject_type), ['Loan', 'Customer', 'Item', 'Sale'])),
             ])
             ->bulkActions([
                 // No bulk actions - view only
