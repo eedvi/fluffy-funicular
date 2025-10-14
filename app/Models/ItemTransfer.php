@@ -86,7 +86,11 @@ class ItemTransfer extends Model
     {
         $prefix = 'T-';
         $date = now()->format('Ymd');
-        $lastTransfer = static::whereDate('created_at', today())->latest()->first();
+        // Use withTrashed to include deleted records for unique number
+        $lastTransfer = static::withTrashed()
+            ->whereDate('created_at', today())
+            ->latest('transfer_number')
+            ->first();
         $sequence = $lastTransfer ? (int) substr($lastTransfer->transfer_number, -4) + 1 : 1;
 
         return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);

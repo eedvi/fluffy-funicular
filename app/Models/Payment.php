@@ -57,7 +57,12 @@ class Payment extends Model
     {
         $prefix = 'P-';
         $date = now()->format('Ymd');
-        $lastPayment = static::whereDate('created_at', today())->latest()->first();
+        // Use withoutGlobalScopes and withTrashed to include deleted records for unique number
+        $lastPayment = static::withoutGlobalScopes()
+            ->withTrashed()
+            ->whereDate('created_at', today())
+            ->latest('payment_number')
+            ->first();
         $sequence = $lastPayment ? (int) substr($lastPayment->payment_number, -4) + 1 : 1;
 
         return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);

@@ -69,7 +69,12 @@ class Sale extends Model
     {
         $prefix = 'S-';
         $date = now()->format('Ymd');
-        $lastSale = static::whereDate('created_at', today())->latest()->first();
+        // Use withoutGlobalScopes and withTrashed to include deleted records for unique number
+        $lastSale = static::withoutGlobalScopes()
+            ->withTrashed()
+            ->whereDate('created_at', today())
+            ->latest('sale_number')
+            ->first();
         $sequence = $lastSale ? (int) substr($lastSale->sale_number, -4) + 1 : 1;
 
         return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);

@@ -122,7 +122,12 @@ class Loan extends Model
     {
         $prefix = 'L-';
         $date = now()->format('Ymd');
-        $lastLoan = static::whereDate('created_at', today())->latest()->first();
+        // Use withoutGlobalScopes and withTrashed to include deleted records for unique number
+        $lastLoan = static::withoutGlobalScopes()
+            ->withTrashed()
+            ->whereDate('created_at', today())
+            ->latest('loan_number')
+            ->first();
         $sequence = $lastLoan ? (int) substr($lastLoan->loan_number, -4) + 1 : 1;
 
         return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
