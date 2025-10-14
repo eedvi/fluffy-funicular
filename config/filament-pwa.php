@@ -98,7 +98,7 @@ return [
     */
 
     'installation' => [
-        'enabled' => env('PWA_INSTALLATION_ENABLED', true),
+        'enabled' => env('PWA_INSTALLATION_ENABLED', false),
         'prompt_delay' => env('PWA_INSTALLATION_DELAY', 2000), // milliseconds
         'ios_instructions_delay' => env('PWA_IOS_INSTRUCTIONS_DELAY', 5000), // milliseconds
 
