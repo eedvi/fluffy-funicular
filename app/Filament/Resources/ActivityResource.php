@@ -202,30 +202,6 @@ class ActivityResource extends Resource
                 Tables\Actions\ViewAction::make()
                     ->label('Ver Detalles')
                     ->icon('heroicon-m-eye'),
-
-                Tables\Actions\Action::make('view_record')
-                    ->label('Ver Registro')
-                    ->icon('heroicon-m-arrow-top-right-on-square')
-                    ->color('info')
-                    ->url(function ($record) {
-                        $subjectType = class_basename($record->subject_type);
-                        $subjectId = $record->subject_id;
-
-                        if (!$subjectId) {
-                            return null;
-                        }
-
-                        return match ($subjectType) {
-                            'Loan' => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $subjectId]),
-                            'Customer' => \App\Filament\Resources\CustomerResource::getUrl('view', ['record' => $subjectId]),
-                            'Item' => \App\Filament\Resources\ItemResource::getUrl('view', ['record' => $subjectId]),
-                            'Payment' => \App\Filament\Resources\PaymentResource::getUrl('index'),
-                            'Sale' => \App\Filament\Resources\SaleResource::getUrl('view', ['record' => $subjectId]),
-                            default => null,
-                        };
-                    })
-                    ->openUrlInNewTab()
-                    ->visible(fn ($record) => $record->subject_id && in_array(class_basename($record->subject_type), ['Loan', 'Customer', 'Item', 'Sale'])),
             ])
             ->bulkActions([
                 // No bulk actions - view only

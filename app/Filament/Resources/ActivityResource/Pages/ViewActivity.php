@@ -86,36 +86,12 @@ class ViewActivity extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        $record = $this->getRecord();
-        $actions = [];
-
-        // Add action to view the related record
-        if ($record->subject_id) {
-            $subjectType = class_basename($record->subject_type);
-            $url = match ($subjectType) {
-                'Loan' => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $record->subject_id]),
-                'Customer' => \App\Filament\Resources\CustomerResource::getUrl('view', ['record' => $record->subject_id]),
-                'Item' => \App\Filament\Resources\ItemResource::getUrl('view', ['record' => $record->subject_id]),
-                'Sale' => \App\Filament\Resources\SaleResource::getUrl('view', ['record' => $record->subject_id]),
-                default => null,
-            };
-
-            if ($url) {
-                $actions[] = Actions\Action::make('view_record')
-                    ->label('Ver Registro Original')
-                    ->url($url)
-                    ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->color('info')
-                    ->openUrlInNewTab();
-            }
-        }
-
-        $actions[] = Actions\Action::make('back')
-            ->label('Volver')
-            ->url(ActivityResource::getUrl('index'))
-            ->icon('heroicon-o-arrow-left')
-            ->color('gray');
-
-        return $actions;
+        return [
+            Actions\Action::make('back')
+                ->label('Volver')
+                ->url(ActivityResource::getUrl('index'))
+                ->icon('heroicon-o-arrow-left')
+                ->color('gray'),
+        ];
     }
 }
