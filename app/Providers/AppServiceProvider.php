@@ -7,8 +7,10 @@ use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
 use App\Listeners\UpdateSessionUserId;
 use App\Models\Loan;
+use App\Models\Payment;
 use App\Models\Sale;
 use App\Observers\LoanObserver;
+use App\Observers\PaymentObserver;
 use App\Observers\SaleObserver;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
@@ -36,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         URL::forceScheme('https');
 
         Loan::observe(LoanObserver::class);
+        Payment::observe(PaymentObserver::class);
         Sale::observe(SaleObserver::class);
 
         // Register authentication event listeners
