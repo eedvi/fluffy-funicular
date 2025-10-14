@@ -43,10 +43,18 @@ class SalesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => 'Pendiente',
+                        'paid' => 'Pagada',
+                        'delivered' => 'Entregada',
+                        'cancelled' => 'Cancelada',
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
-                        'Completada' => 'success',
-                        'Pendiente' => 'warning',
-                        'Cancelada' => 'danger',
+                        'pending' => 'warning',
+                        'paid' => 'info',
+                        'delivered' => 'success',
+                        'cancelled' => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('sale_date')

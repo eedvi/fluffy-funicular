@@ -59,8 +59,7 @@ class ItemTransferResource extends Resource
                         Forms\Components\Select::make('item_id')
                             ->label('Artículo')
                             ->relationship('item', 'name', function (Builder $query) {
-                                return $query->where('status', 'Disponible')
-                                    ->orWhere('status', 'En Reparación')
+                                return $query->where('status', 'available')
                                     ->with(['branch', 'category']);
                             })
                             ->getOptionLabelFromRecordUsing(function ($record) {
@@ -78,7 +77,7 @@ class ItemTransferResource extends Resource
                                     }
                                 }
                             })
-                            ->helperText('Solo se muestran artículos disponibles o en reparación'),
+                            ->helperText('Solo se muestran artículos disponibles'),
 
                         Forms\Components\Placeholder::make('item_details')
                             ->label('Información del Artículo')

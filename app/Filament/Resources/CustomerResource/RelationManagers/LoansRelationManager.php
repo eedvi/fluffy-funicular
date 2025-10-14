@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CustomerResource\RelationManagers;
 
+use App\Models\Loan;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -43,11 +44,20 @@ class LoansRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        Loan::STATUS_PENDING => 'Pendiente',
+                        Loan::STATUS_ACTIVE => 'Activo',
+                        Loan::STATUS_PAID => 'Pagado',
+                        Loan::STATUS_OVERDUE => 'Vencido',
+                        Loan::STATUS_FORFEITED => 'Confiscado',
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
-                        'Activo' => 'success',
-                        'Pagado' => 'info',
-                        'Vencido' => 'warning',
-                        'Confiscado' => 'danger',
+                        Loan::STATUS_PENDING => 'gray',
+                        Loan::STATUS_ACTIVE => 'success',
+                        Loan::STATUS_PAID => 'info',
+                        Loan::STATUS_OVERDUE => 'warning',
+                        Loan::STATUS_FORFEITED => 'danger',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('due_date')

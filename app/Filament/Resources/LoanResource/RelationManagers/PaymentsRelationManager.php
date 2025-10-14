@@ -36,20 +36,33 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Método')
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'cash' => 'Efectivo',
+                        'card' => 'Tarjeta',
+                        'transfer' => 'Transferencia',
+                        'check' => 'Cheque',
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
-                        'Efectivo' => 'success',
-                        'Transferencia' => 'info',
-                        'Tarjeta de Débito', 'Tarjeta de Crédito' => 'warning',
+                        'cash' => 'success',
+                        'transfer' => 'info',
+                        'card' => 'warning',
+                        'check' => 'gray',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'completed' => 'Completado',
+                        'pending' => 'Pendiente',
+                        'cancelled' => 'Cancelado',
+                        default => $state,
+                    })
                     ->color(fn (string $state): string => match ($state) {
-                        'Completado' => 'success',
-                        'Pendiente' => 'warning',
-                        'Rechazado' => 'danger',
-                        'Cancelado' => 'gray',
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'cancelled' => 'gray',
                         default => 'gray',
                     }),
                 Tables\Columns\TextColumn::make('reference_number')

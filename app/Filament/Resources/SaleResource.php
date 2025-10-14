@@ -46,12 +46,19 @@ class SaleResource extends Resource
                                     ->dehydrated(),
                                 Forms\Components\Select::make('item_id')
                                     ->label('Artículo')
-                                    ->relationship('item', 'name', fn (Builder $query) =>
-                                        $query->whereIn('status', ['available', 'forfeited'])
-                                    )
-                                    ->searchable()
+                                    ->relationship('item', 'name', function (Builder $query) {
+                                        return $query->whereIn('status', ['available', 'forfeited'])
+                                            ->with(['branch', 'category']);
+                                    })
+                                    ->getOptionLabelFromRecordUsing(function ($record) {
+                                        return $record->name . ' - ' .
+                                               ($record->category?->name ?? 'Sin categoría') .
+                                               ' ($' . number_format($record->appraised_value, 2) . ')';
+                                    })
+                                    ->searchable(['name', 'description'])
                                     ->required()
-                                    ->preload(),
+                                    ->preload()
+                                    ->helperText('Se muestran artículos disponibles y confiscados'),
                                 Forms\Components\Select::make('customer_id')
                                     ->label('Cliente')
                                     ->relationship('customer', 'first_name')

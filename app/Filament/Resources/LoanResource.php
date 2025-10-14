@@ -56,10 +56,19 @@ class LoanResource extends Resource
                                     ->preload(),
                                 Forms\Components\Select::make('item_id')
                                     ->label('Artículo')
-                                    ->relationship('item', 'name', fn (Builder $query) => $query->where('status', 'Disponible'))
-                                    ->searchable()
+                                    ->relationship('item', 'name', function (Builder $query) {
+                                        return $query->where('status', 'available')
+                                            ->with(['branch', 'category']);
+                                    })
+                                    ->getOptionLabelFromRecordUsing(function ($record) {
+                                        return $record->name . ' - ' .
+                                               ($record->category?->name ?? 'Sin categoría') .
+                                               ' ($' . number_format($record->appraised_value, 2) . ')';
+                                    })
+                                    ->searchable(['name', 'description'])
                                     ->required()
-                                    ->preload(),
+                                    ->preload()
+                                    ->helperText('Solo se muestran artículos disponibles'),
                                 Forms\Components\Select::make('branch_id')
                                     ->label('Sucursal')
                                     ->relationship('branch', 'name')
@@ -449,13 +458,12 @@ class LoanResource extends Resource
                             ->label('Método de Pago')
                             ->required()
                             ->options([
-                                'Efectivo' => 'Efectivo',
-                                'Transferencia' => 'Transferencia',
-                                'Tarjeta de Débito' => 'Tarjeta de Débito',
-                                'Tarjeta de Crédito' => 'Tarjeta de Crédito',
-                                'Cheque' => 'Cheque',
+                                'cash' => 'Efectivo',
+                                'transfer' => 'Transferencia',
+                                'card' => 'Tarjeta',
+                                'check' => 'Cheque',
                             ])
-                            ->default('Efectivo')
+                            ->default('cash')
                             ->native(false),
                         Forms\Components\DatePicker::make('payment_date')
                             ->label('Fecha de Pago')
@@ -473,7 +481,7 @@ class LoanResource extends Resource
                                 'amount' => $data['amount'],
                                 'payment_date' => $data['payment_date'],
                                 'payment_method' => $data['payment_method'],
-                                'status' => 'Completado',
+                                'status' => 'completed',
                                 'branch_id' => $record->branch_id,
                             ]);
 
