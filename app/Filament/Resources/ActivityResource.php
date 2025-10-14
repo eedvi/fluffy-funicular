@@ -159,7 +159,8 @@ class ActivityResource extends Resource
                 Tables\Filters\SelectFilter::make('causer_id')
                     ->label('Usuario')
                     ->relationship('causer', 'name')
-                    ->searchable()
+                    ->searchable(['name', 'email'])
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->name)
                     ->preload(),
 
                 Tables\Filters\Filter::make('created_at')
