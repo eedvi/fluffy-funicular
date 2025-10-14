@@ -47,9 +47,9 @@ class CustomerResource extends Resource
                                 Forms\Components\Select::make('gender')
                                     ->label('Género')
                                     ->options([
-                                        'M' => 'Masculino',
-                                        'F' => 'Femenino',
-                                        'Otro' => 'Otro',
+                                        'male' => 'Masculino',
+                                        'female' => 'Femenino',
+                                        'other' => 'Otro',
                                     ]),
                                 Forms\Components\DatePicker::make('date_of_birth')
                                     ->label('Fecha de Nacimiento')
