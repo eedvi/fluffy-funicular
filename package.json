@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "serve": "concurrently \"npm run dev\" \"php artisan serve\" --names \"VITE,LARAVEL\" --prefix-colors \"cyan,green\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

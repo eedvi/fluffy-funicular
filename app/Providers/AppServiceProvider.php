@@ -35,7 +35,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Force HTTPS in production to prevent mixed content issues
-        URL::forceScheme('https');
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         Loan::observe(LoanObserver::class);
         Payment::observe(PaymentObserver::class);

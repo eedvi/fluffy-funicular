@@ -29,6 +29,12 @@ class ViewActivity extends ViewRecord
                         Components\TextEntry::make('event')
                             ->label('Evento')
                             ->badge()
+                            ->formatStateUsing(fn (string $state): string => match ($state) {
+                                'created' => 'Creado',
+                                'updated' => 'Actualizado',
+                                'deleted' => 'Eliminado',
+                                default => ucfirst($state),
+                            })
                             ->color(fn (string $state): string => match ($state) {
                                 'created' => 'success',
                                 'updated' => 'info',
@@ -38,7 +44,17 @@ class ViewActivity extends ViewRecord
 
                         Components\TextEntry::make('subject_type')
                             ->label('Tipo de Registro')
-                            ->formatStateUsing(fn ($state) => class_basename($state))
+                            ->formatStateUsing(fn (string $state): string => match (class_basename($state)) {
+                                'Loan' => 'Préstamo',
+                                'Customer' => 'Cliente',
+                                'Item' => 'Artículo',
+                                'Payment' => 'Pago',
+                                'Sale' => 'Venta',
+                                'ItemTransfer' => 'Transferencia',
+                                'Branch' => 'Sucursal',
+                                'Category' => 'Categoría',
+                                default => class_basename($state),
+                            })
                             ->badge(),
 
                         Components\TextEntry::make('subject_id')
@@ -58,25 +74,73 @@ class ViewActivity extends ViewRecord
 
                 Components\Section::make('Detalles de la Sesión')
                     ->schema([
-                        Components\TextEntry::make('properties.ip')
+                        Components\TextEntry::make('ip_address')
                             ->label('Dirección IP')
-                            ->default('N/A')
+                            ->state(fn ($record) => $record->properties['ip'] ?? 'N/A')
                             ->icon('heroicon-m-globe-alt'),
 
-                        Components\TextEntry::make('properties.user_agent')
+                        Components\TextEntry::make('user_agent')
                             ->label('Navegador/Dispositivo')
-                            ->default('N/A')
+                            ->state(fn ($record) => $record->properties['user_agent'] ?? 'N/A')
                             ->columnSpanFull()
                             ->icon('heroicon-m-computer-desktop'),
                     ])
                     ->columns(2)
-                    ->collapsible(),
+                    ->collapsible()
+                    ->visible(fn ($record) => isset($record->properties['ip']) || isset($record->properties['user_agent'])),
 
                 Components\Section::make('Cambios Realizados')
                     ->schema([
-                        Components\ViewField::make('changes')
+                        Components\TextEntry::make('event')
                             ->label('')
-                            ->view('filament.components.activity-changes')
+                            ->state(function ($record) {
+                                $old = $record->properties['old'] ?? [];
+                                $new = $record->properties['attributes'] ?? [];
+                                $event = $record->event;
+
+                                // Field labels
+                                $fieldLabels = [
+                                    'loan_amount' => 'Monto del Préstamo',
+                                    'status' => 'Estado',
+                                    'payment_date' => 'Fecha de Pago',
+                                    'amount' => 'Monto',
+                                    'first_name' => 'Nombre',
+                                    'last_name' => 'Apellido',
+                                    'name' => 'Nombre',
+                                ];
+
+                                // Helper function to convert values to string safely
+                                $formatValue = function ($value) {
+                                    if (is_array($value)) {
+                                        return json_encode($value);
+                                    }
+                                    if (is_bool($value)) {
+                                        return $value ? 'Sí' : 'No';
+                                    }
+                                    if (is_null($value)) {
+                                        return 'N/A';
+                                    }
+                                    return (string) $value;
+                                };
+
+                                if ($event === 'created') {
+                                    return 'Registro creado exitosamente.';
+                                } elseif ($event === 'deleted') {
+                                    return 'Registro eliminado del sistema.';
+                                } else {
+                                    $changes = [];
+                                    foreach (array_keys($old + $new) as $key) {
+                                        if (!in_array($key, ['created_at', 'updated_at']) && ($old[$key] ?? null) != ($new[$key] ?? null)) {
+                                            $label = $fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key));
+                                            $oldVal = $formatValue($old[$key] ?? null);
+                                            $newVal = $formatValue($new[$key] ?? null);
+                                            $changes[] = "**{$label}:** {$oldVal} → {$newVal}";
+                                        }
+                                    }
+                                    return empty($changes) ? 'Sin cambios detectados.' : implode("\n\n", $changes);
+                                }
+                            })
+                            ->markdown()
                             ->columnSpanFull(),
                     ])
                     ->collapsible()

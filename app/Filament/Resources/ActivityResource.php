@@ -196,7 +196,6 @@ class ActivityResource extends Resource
                         return $indicators;
                     }),
             ])
-            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
             ->persistFiltersInSession()
             ->actions([
                 Tables\Actions\ViewAction::make()
