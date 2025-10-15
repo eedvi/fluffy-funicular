@@ -16,9 +16,14 @@ class LoanObserver
             throw new \Exception("El artículo no está disponible para préstamo. Estado actual: {$loan->item->status}");
         }
 
-        // Set amount_paid to 0 if not set (balance_remaining is auto-calculated)
+        // Set amount_paid to 0 if not set
         if (!isset($loan->amount_paid)) {
             $loan->amount_paid = 0;
+        }
+
+        // Set balance_remaining to total_amount if not set
+        if (!isset($loan->balance_remaining) && isset($loan->total_amount)) {
+            $loan->balance_remaining = $loan->total_amount;
         }
     }
 
