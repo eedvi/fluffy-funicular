@@ -38,9 +38,15 @@ class LoanRenewalResource extends Resource
                             ->label('Préstamo')
                             ->relationship('loan', 'loan_number', function (Builder $query) {
                                 // Only show active or overdue loans that can be renewed
-                                return $query->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE]);
+                                // Load customer relationship for label display
+                                return $query
+                                    ->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE])
+                                    ->with('customer');
                             })
                             ->getOptionLabelFromRecordUsing(function ($record) {
+                                if (!$record->customer) {
+                                    return $record->loan_number . ' ($' . number_format($record->loan_amount, 2) . ')';
+                                }
                                 return $record->loan_number . ' - ' . $record->customer->full_name . ' ($' . number_format($record->loan_amount, 2) . ')';
                             })
                             ->searchable(['loan_number'])

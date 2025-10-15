@@ -50,6 +50,24 @@ class Reports extends Page implements HasForms
         ]);
     }
 
+    /**
+     * Log report export activity
+     */
+    protected function logReportExport(string $reportType, string $format, ?int $branchId, array $additionalData = []): void
+    {
+        activity()
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'report_type' => $reportType,
+                'format' => $format,
+                'branch_id' => $branchId,
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                ...$additionalData,
+            ])
+            ->log("Reporte exportado: {$reportType} ({$format})");
+    }
+
     public function form(Form $form): Form
     {
         return $form
@@ -102,6 +120,12 @@ class Reports extends Page implements HasForms
 
                 return null;
             }
+
+            // Log the export
+            $this->logReportExport('Préstamos Activos', $format, $branchId, [
+                'total_loans' => $loans->count(),
+                'total_amount' => $loans->sum('loan_amount'),
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.active-loans', compact('loans'));
@@ -156,6 +180,12 @@ class Reports extends Page implements HasForms
 
                 return null;
             }
+
+            // Log the export
+            $this->logReportExport('Préstamos Vencidos', $format, $branchId, [
+                'total_loans' => $loans->count(),
+                'total_overdue_amount' => $loans->sum('balance_remaining'),
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.overdue-loans', compact('loans'));
@@ -215,6 +245,14 @@ class Reports extends Page implements HasForms
             $totalSales = $sales->sum('final_price');
             $totalDiscount = $sales->sum('discount');
 
+            // Log the export
+            $this->logReportExport('Ventas por Período', $format, $branchId, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'total_sales' => $sales->count(),
+                'total_revenue' => $totalSales,
+            ]);
+
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.sales', compact('sales', 'totalSales', 'totalDiscount', 'dateFrom', 'dateTo'));
                 return response()->streamDownload(
@@ -272,6 +310,14 @@ class Reports extends Page implements HasForms
             }
 
             $totalPayments = $payments->sum('amount');
+
+            // Log the export
+            $this->logReportExport('Pagos Recibidos', $format, $branchId, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'total_payments' => $payments->count(),
+                'total_amount' => $totalPayments,
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.payments', compact('payments', 'totalPayments', 'dateFrom', 'dateTo'));
@@ -335,6 +381,12 @@ class Reports extends Page implements HasForms
                     'total_value' => $categoryItems->sum('appraised_value'),
                 ];
             });
+
+            // Log the export
+            $this->logReportExport('Inventario', $format, $branchId, [
+                'total_items' => $items->count(),
+                'total_value' => $totalValue,
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.inventory', compact('items', 'totalValue', 'totalMarketValue', 'byCategory'));
@@ -411,6 +463,14 @@ class Reports extends Page implements HasForms
                 'payments_received' => $revenueData->sum('payments_received'),
                 'total_revenue' => $revenueData->sum('total_revenue'),
             ];
+
+            // Log the export
+            $this->logReportExport('Ingresos por Sucursal', $format, null, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'total_revenue' => $totals['total_revenue'],
+                'branches_count' => $revenueData->count(),
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.revenue-by-branch', compact('revenueData', 'totals', 'dateFrom', 'dateTo'));
@@ -493,6 +553,14 @@ class Reports extends Page implements HasForms
                 'total_purchased' => $customerData->sum('total_purchased'),
                 'total_business' => $customerData->sum('total_business'),
             ];
+
+            // Log the export
+            $this->logReportExport('Análisis de Clientes', $format, $branchId, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'total_customers' => $totals['total_customers'],
+                'total_business' => $totals['total_business'],
+            ]);
 
             if ($format === 'pdf') {
                 $pdf = Pdf::loadView('reports.customer-analytics', compact('customerData', 'totals', 'dateFrom', 'dateTo'));

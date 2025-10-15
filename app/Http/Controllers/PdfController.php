@@ -11,11 +11,29 @@ use Illuminate\Http\Response;
 class PdfController extends Controller
 {
     /**
+     * Log PDF generation activity
+     */
+    protected function logPdfGeneration(string $pdfType, $model, string $action = 'view'): void
+    {
+        activity()
+            ->performedOn($model)
+            ->causedBy(auth()->user())
+            ->withProperties([
+                'pdf_type' => $pdfType,
+                'action' => $action,
+                'ip' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ])
+            ->log("PDF generado: {$pdfType} ({$action})");
+    }
+
+    /**
      * Generate loan contract PDF
      */
     public function loanContract(Loan $loan): Response
     {
         $loan->load(['customer', 'item.category', 'branch']);
+        $this->logPdfGeneration('Contrato de Préstamo', $loan, 'view');
 
         $pdf = Pdf::loadView('pdf.loan-contract', compact('loan'));
 
@@ -28,6 +46,7 @@ class PdfController extends Controller
     public function downloadLoanContract(Loan $loan): Response
     {
         $loan->load(['customer', 'item.category', 'branch']);
+        $this->logPdfGeneration('Contrato de Préstamo', $loan, 'download');
 
         $pdf = Pdf::loadView('pdf.loan-contract', compact('loan'));
 
@@ -41,6 +60,7 @@ class PdfController extends Controller
     {
         $loan->load(['customer', 'item', 'branch']);
         $branch = $loan->branch;
+        $this->logPdfGeneration('Comprobante de Préstamo', $loan, 'view');
 
         $pdf = Pdf::loadView('pdf.loan-receipt', compact('loan', 'branch'));
 
@@ -54,6 +74,7 @@ class PdfController extends Controller
     {
         $loan->load(['customer', 'item', 'branch']);
         $branch = $loan->branch;
+        $this->logPdfGeneration('Comprobante de Préstamo', $loan, 'download');
 
         $pdf = Pdf::loadView('pdf.loan-receipt', compact('loan', 'branch'));
 
@@ -69,6 +90,7 @@ class PdfController extends Controller
         // Refresh loan to get updated amount_paid and balance_remaining
         $payment->loan->refresh();
         $branch = $payment->branch;
+        $this->logPdfGeneration('Recibo de Pago', $payment, 'view');
 
         $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
 
@@ -84,6 +106,7 @@ class PdfController extends Controller
         // Refresh loan to get updated amount_paid and balance_remaining
         $payment->loan->refresh();
         $branch = $payment->branch;
+        $this->logPdfGeneration('Recibo de Pago', $payment, 'download');
 
         $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
 
@@ -97,6 +120,7 @@ class PdfController extends Controller
     {
         $sale->load(['customer', 'item', 'branch']);
         $branch = $sale->branch;
+        $this->logPdfGeneration('Comprobante de Venta', $sale, 'view');
 
         $pdf = Pdf::loadView('pdf.sale-receipt', compact('sale', 'branch'));
 
@@ -110,6 +134,7 @@ class PdfController extends Controller
     {
         $sale->load(['customer', 'item', 'branch']);
         $branch = $sale->branch;
+        $this->logPdfGeneration('Comprobante de Venta', $sale, 'download');
 
         $pdf = Pdf::loadView('pdf.sale-receipt', compact('sale', 'branch'));
 

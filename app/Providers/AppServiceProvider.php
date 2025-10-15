@@ -9,9 +9,11 @@ use App\Listeners\UpdateSessionUserId;
 use App\Models\Loan;
 use App\Models\Payment;
 use App\Models\Sale;
+use App\Models\User;
 use App\Observers\LoanObserver;
 use App\Observers\PaymentObserver;
 use App\Observers\SaleObserver;
+use App\Observers\UserObserver;
 use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -42,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
         Loan::observe(LoanObserver::class);
         Payment::observe(PaymentObserver::class);
         Sale::observe(SaleObserver::class);
+        User::observe(UserObserver::class);
 
         // Register authentication event listeners
         Event::listen(Login::class, LogSuccessfulLogin::class);

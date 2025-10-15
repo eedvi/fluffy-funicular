@@ -72,6 +72,91 @@ class ViewActivity extends ViewRecord
                     ])
                     ->columns(2),
 
+                Components\Section::make('Registro Afectado')
+                    ->schema([
+                        Components\TextEntry::make('subject_info')
+                            ->label('Tipo de Registro')
+                            ->state(function ($record) {
+                                if (!$record->subject_type || !$record->subject_id) {
+                                    return 'No disponible';
+                                }
+
+                                $subjectType = class_basename($record->subject_type);
+                                $attributes = $record->properties['attributes'] ?? [];
+
+                                $typeLabel = match ($subjectType) {
+                                    'Loan' => 'Préstamo',
+                                    'Customer' => 'Cliente',
+                                    'Item' => 'Artículo',
+                                    'Payment' => 'Pago',
+                                    'Sale' => 'Venta',
+                                    'ItemTransfer' => 'Transferencia',
+                                    'Branch' => 'Sucursal',
+                                    'Category' => 'Categoría',
+                                    'User' => 'Usuario',
+                                    default => $subjectType,
+                                };
+
+                                // Get identifying information
+                                $identifier = '';
+                                if (isset($attributes['loan_number'])) {
+                                    $identifier = $attributes['loan_number'];
+                                } elseif (isset($attributes['payment_number'])) {
+                                    $identifier = $attributes['payment_number'];
+                                } elseif (isset($attributes['sale_number'])) {
+                                    $identifier = $attributes['sale_number'];
+                                } elseif (isset($attributes['name'])) {
+                                    $identifier = $attributes['name'];
+                                } elseif (isset($attributes['first_name']) || isset($attributes['last_name'])) {
+                                    $identifier = trim(($attributes['first_name'] ?? '') . ' ' . ($attributes['last_name'] ?? ''));
+                                }
+
+                                return $typeLabel . ($identifier ? " - {$identifier}" : '');
+                            })
+                            ->badge()
+                            ->color('info'),
+
+                        Components\TextEntry::make('subject_id')
+                            ->label('ID del Registro')
+                            ->formatStateUsing(fn ($state) => "#{$state}"),
+
+                        Components\TextEntry::make('subject_link')
+                            ->label('Enlace')
+                            ->state(fn ($record) => $record->subject_type && $record->subject_id ? 'Ver registro →' : 'N/A')
+                            ->url(function ($record) {
+                                if (!$record->subject_type || !$record->subject_id) {
+                                    return null;
+                                }
+
+                                $subjectType = class_basename($record->subject_type);
+                                $subjectId = $record->subject_id;
+
+                                try {
+                                    return match ($subjectType) {
+                                        'Loan' => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $subjectId]),
+                                        'Customer' => \App\Filament\Resources\CustomerResource::getUrl('view', ['record' => $subjectId]),
+                                        'Item' => \App\Filament\Resources\ItemResource::getUrl('edit', ['record' => $subjectId]),
+                                        'Payment' => \App\Filament\Resources\PaymentResource::getUrl('view', ['record' => $subjectId]),
+                                        'Sale' => \App\Filament\Resources\SaleResource::getUrl('view', ['record' => $subjectId]),
+                                        'ItemTransfer' => \App\Filament\Resources\ItemTransferResource::getUrl('view', ['record' => $subjectId]),
+                                        'Branch' => \App\Filament\Resources\BranchResource::getUrl('edit', ['record' => $subjectId]),
+                                        'Category' => \App\Filament\Resources\CategoryResource::getUrl('edit', ['record' => $subjectId]),
+                                        'User' => \App\Filament\Resources\UserResource::getUrl('edit', ['record' => $subjectId]),
+                                        default => null,
+                                    };
+                                } catch (\Exception $e) {
+                                    return null;
+                                }
+                            })
+                            ->color('primary')
+                            ->weight('bold')
+                            ->icon('heroicon-m-arrow-top-right-on-square')
+                            ->openUrlInNewTab(),
+                    ])
+                    ->columns(3)
+                    ->collapsible()
+                    ->visible(fn ($record) => $record->subject_type && $record->subject_id),
+
                 Components\Section::make('Detalles de la Sesión')
                     ->schema([
                         Components\TextEntry::make('ip_address')
@@ -98,19 +183,81 @@ class ViewActivity extends ViewRecord
                                 $new = $record->properties['attributes'] ?? [];
                                 $event = $record->event;
 
-                                // Field labels
+                                // Field labels in Spanish
                                 $fieldLabels = [
                                     'loan_amount' => 'Monto del Préstamo',
+                                    'total_amount' => 'Monto Total',
+                                    'amount_paid' => 'Monto Pagado',
+                                    'balance_remaining' => 'Saldo Pendiente',
                                     'status' => 'Estado',
                                     'payment_date' => 'Fecha de Pago',
+                                    'payment_method' => 'Método de Pago',
                                     'amount' => 'Monto',
                                     'first_name' => 'Nombre',
                                     'last_name' => 'Apellido',
                                     'name' => 'Nombre',
+                                    'customer_id' => 'Cliente',
+                                    'item_id' => 'Artículo',
+                                    'loan_id' => 'Préstamo',
+                                    'branch_id' => 'Sucursal',
+                                    'category_id' => 'Categoría',
+                                    'email' => 'Correo Electrónico',
+                                    'phone' => 'Teléfono',
+                                    'address' => 'Dirección',
+                                    'interest_rate' => 'Tasa de Interés',
+                                    'due_date' => 'Fecha de Vencimiento',
+                                    'loan_number' => 'Número de Préstamo',
+                                    'payment_number' => 'Número de Pago',
+                                    'sale_number' => 'Número de Venta',
+                                    'notes' => 'Notas',
+                                    'reference_number' => 'Número de Referencia',
+                                    'quantity' => 'Cantidad',
+                                    'price' => 'Precio',
+                                    'sale_price' => 'Precio de Venta',
+                                    'description' => 'Descripción',
+                                    'serial_number' => 'Número de Serie',
+                                    'is_active' => 'Activo',
+                                    'report_type' => 'Tipo de Reporte',
+                                    'format' => 'Formato',
+                                    'pdf_type' => 'Tipo de PDF',
+                                    'action' => 'Acción',
                                 ];
 
+                                // Helper function to translate values
+                                $translateValue = function ($key, $value) {
+                                    // Status translations
+                                    if ($key === 'status') {
+                                        return match ($value) {
+                                            'active' => 'Activo',
+                                            'paid' => 'Pagado',
+                                            'overdue' => 'Vencido',
+                                            'defaulted' => 'Incumplido',
+                                            'completed' => 'Completado',
+                                            'pending' => 'Pendiente',
+                                            'cancelled' => 'Cancelado',
+                                            'available' => 'Disponible',
+                                            'collateral' => 'En Garantía',
+                                            'sold' => 'Vendido',
+                                            default => ucfirst($value),
+                                        };
+                                    }
+
+                                    // Payment method translations
+                                    if ($key === 'payment_method') {
+                                        return match ($value) {
+                                            'cash' => 'Efectivo',
+                                            'card' => 'Tarjeta',
+                                            'transfer' => 'Transferencia',
+                                            'check' => 'Cheque',
+                                            default => ucfirst($value),
+                                        };
+                                    }
+
+                                    return $value;
+                                };
+
                                 // Helper function to convert values to string safely
-                                $formatValue = function ($value) {
+                                $formatValue = function ($key, $value) use ($translateValue) {
                                     if (is_array($value)) {
                                         return json_encode($value);
                                     }
@@ -120,7 +267,11 @@ class ViewActivity extends ViewRecord
                                     if (is_null($value)) {
                                         return 'N/A';
                                     }
-                                    return (string) $value;
+
+                                    $stringValue = (string) $value;
+
+                                    // Translate if applicable
+                                    return $translateValue($key, $stringValue);
                                 };
 
                                 if ($event === 'created') {
@@ -130,11 +281,11 @@ class ViewActivity extends ViewRecord
                                 } else {
                                     $changes = [];
                                     foreach (array_keys($old + $new) as $key) {
-                                        if (!in_array($key, ['created_at', 'updated_at']) && ($old[$key] ?? null) != ($new[$key] ?? null)) {
+                                        if (!in_array($key, ['created_at', 'updated_at', 'id']) && ($old[$key] ?? null) != ($new[$key] ?? null)) {
                                             $label = $fieldLabels[$key] ?? ucfirst(str_replace('_', ' ', $key));
-                                            $oldVal = $formatValue($old[$key] ?? null);
-                                            $newVal = $formatValue($new[$key] ?? null);
-                                            $changes[] = "**{$label}:** {$oldVal} → {$newVal}";
+                                            $oldVal = $formatValue($key, $old[$key] ?? null);
+                                            $newVal = $formatValue($key, $new[$key] ?? null);
+                                            $changes[] = "**{$label}:** `{$oldVal}` → `{$newVal}`";
                                         }
                                     }
                                     return empty($changes) ? 'Sin cambios detectados.' : implode("\n\n", $changes);
