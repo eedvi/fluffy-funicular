@@ -36,13 +36,17 @@ class LoanRenewalResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('loan_id')
                             ->label('Préstamo')
-                            ->relationship('loan', 'loan_number', function (Builder $query) {
-                                // Only show active or overdue loans that can be renewed
-                                // Load customer relationship for label display
-                                return $query
-                                    ->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE])
-                                    ->with('customer');
-                            })
+                            ->relationship(
+                                name: 'loan',
+                                titleAttribute: 'loan_number',
+                                modifyQueryUsing: function (Builder $query) {
+                                    // Only show active or overdue loans that can be renewed
+                                    // Load customer relationship for label display
+                                    return $query
+                                        ->whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE])
+                                        ->with('customer');
+                                }
+                            )
                             ->getOptionLabelFromRecordUsing(function ($record) {
                                 if (!$record->customer) {
                                     return $record->loan_number . ' ($' . number_format($record->loan_amount, 2) . ')';
@@ -63,7 +67,10 @@ class LoanRenewalResource extends Resource
                                     }
                                 }
                             })
-                            ->helperText('Seleccione el préstamo a renovar'),
+                            ->helperText(function () {
+                                $count = Loan::whereIn('status', [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE])->count();
+                                return "Seleccione el préstamo a renovar. Préstamos disponibles: {$count}";
+                            }),
 
                         Forms\Components\Placeholder::make('loan_details')
                             ->label('Detalles del Préstamo')
