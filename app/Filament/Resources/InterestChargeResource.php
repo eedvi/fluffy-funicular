@@ -70,7 +70,14 @@ class InterestChargeResource extends Resource
                                     return 'Préstamo no encontrado';
                                 }
 
-                                return view('filament.components.loan-details', ['loan' => $loan]);
+                                return sprintf(
+                                    'Cliente: %s | Artículo: %s | Monto: Q%s | Balance Actual: Q%s | Vence: %s',
+                                    $loan->customer->first_name . ' ' . $loan->customer->last_name,
+                                    $loan->item->name ?? 'N/A',
+                                    number_format($loan->loan_amount, 2),
+                                    number_format($loan->current_balance ?? $loan->total_amount, 2),
+                                    $loan->due_date ? $loan->due_date->format('d/m/Y') : 'N/A'
+                                );
                             })
                             ->hidden(fn ($get) => !$get('loan_id')),
                     ])
