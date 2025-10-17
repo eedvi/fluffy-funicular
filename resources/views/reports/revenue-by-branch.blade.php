@@ -44,11 +44,11 @@
             <tr>
                 <td><strong>{{ $data['branch']->name }}</strong></td>
                 <td class="text-center">{{ $data['loans_issued'] }}</td>
-                <td class="text-right">${{ number_format($data['loans_revenue'], 2) }}</td>
+                <td class="text-right">Q{{ number_format($data['loans_revenue'], 2) }}</td>
                 <td class="text-center">{{ $data['sales_count'] }}</td>
-                <td class="text-right">${{ number_format($data['sales_revenue'], 2) }}</td>
-                <td class="text-right">${{ number_format($data['payments_received'], 2) }}</td>
-                <td class="text-right"><strong>${{ number_format($data['total_revenue'], 2) }}</strong></td>
+                <td class="text-right">Q{{ number_format($data['sales_revenue'], 2) }}</td>
+                <td class="text-right">Q{{ number_format($data['payments_received'], 2) }}</td>
+                <td class="text-right"><strong>Q{{ number_format($data['total_revenue'], 2) }}</strong></td>
             </tr>
             @endforeach
         </tbody>
@@ -64,7 +64,7 @@
 
         <div class="summary-row">
             <span class="summary-label">Total Ingresos por Intereses:</span>
-            <span class="summary-value">${{ number_format($totals['loans_revenue'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['loans_revenue'], 2) }}</span>
         </div>
 
         <div class="summary-row">
@@ -74,17 +74,17 @@
 
         <div class="summary-row">
             <span class="summary-label">Total Ingresos por Ventas:</span>
-            <span class="summary-value">${{ number_format($totals['sales_revenue'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['sales_revenue'], 2) }}</span>
         </div>
 
         <div class="summary-row">
             <span class="summary-label">Total Pagos Recibidos:</span>
-            <span class="summary-value">${{ number_format($totals['payments_received'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['payments_received'], 2) }}</span>
         </div>
 
         <div class="summary-row grand-total">
             <span class="summary-label">TOTAL GENERAL DE INGRESOS:</span>
-            <span class="summary-value">${{ number_format($totals['total_revenue'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['total_revenue'], 2) }}</span>
         </div>
     </div>
 

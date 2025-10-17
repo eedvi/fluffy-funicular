@@ -84,7 +84,7 @@ class SaleResource extends Resource
                                     ->label('Precio de Venta')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (Get $get, Set $set) {
@@ -94,7 +94,7 @@ class SaleResource extends Resource
                                     ->label('Descuento')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->minValue(0)
                                     ->live(onBlur: true)
@@ -105,7 +105,7 @@ class SaleResource extends Resource
                                     ->label('Precio Final')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(),
@@ -199,16 +199,16 @@ class SaleResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('sale_price')
                     ->label('Precio')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('discount')
                     ->label('Descuento')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('final_price')
                     ->label('Total')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')

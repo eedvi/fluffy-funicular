@@ -132,4 +132,21 @@ class Loan extends Model
 
         return $prefix . $date . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
+
+    public static function calculateLoanAmounts(float $loanAmount, float $interestRate): array
+    {
+        $interestAmount = $loanAmount * ($interestRate / 100);
+        $totalAmount = $loanAmount + $interestAmount;
+
+        return [
+            'interest_amount' => round($interestAmount, 2),
+            'total_amount' => round($totalAmount, 2),
+            'balance_remaining' => round($totalAmount, 2),
+        ];
+    }
+
+    public static function calculateDueDate(string $startDate, int $loanTermDays): string
+    {
+        return \Carbon\Carbon::parse($startDate)->addDays($loanTermDays)->format('Y-m-d');
+    }
 }

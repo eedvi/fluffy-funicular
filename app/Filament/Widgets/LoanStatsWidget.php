@@ -61,12 +61,12 @@ class LoanStatsWidget extends BaseWidget
                     ->color($overdueLoans > 0 ? 'warning' : 'success')
                     ->chart([7, 5, 10, 8, 12, 9, $activeLoans]),
 
-                Stat::make('Saldo Total Pendiente', '$' . number_format($totalActiveBalance, 2))
+                Stat::make('Saldo Total Pendiente', 'Q' . number_format($totalActiveBalance, 2))
                     ->description('Préstamos activos y vencidos')
                     ->descriptionIcon('heroicon-m-currency-dollar')
                     ->color('info'),
 
-                Stat::make('Ingresos del Mes', '$' . number_format($revenueThisMonth, 2))
+                Stat::make('Ingresos del Mes', 'Q' . number_format($revenueThisMonth, 2))
                     ->description(($revenueChange >= 0 ? '+' : '') . number_format($revenueChange, 1) . '% vs mes pasado')
                     ->descriptionIcon($revenueChange >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down')
                     ->color($revenueChange >= 0 ? 'success' : 'danger')

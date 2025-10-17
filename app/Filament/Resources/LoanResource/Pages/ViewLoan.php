@@ -43,11 +43,20 @@ class ViewLoan extends ViewRecord
                             Infolists\Components\TextEntry::make('status')
                                 ->label('Estado')
                                 ->badge()
+                                ->formatStateUsing(fn (string $state): string => match ($state) {
+                                    'pending' => 'Pendiente',
+                                    'active' => 'Activo',
+                                    'paid' => 'Pagado',
+                                    'overdue' => 'Vencido',
+                                    'forfeited' => 'Confiscado',
+                                    default => $state,
+                                })
                                 ->color(fn (string $state): string => match ($state) {
+                                    'pending' => 'gray',
                                     'active' => 'success',
                                     'paid' => 'info',
                                     'overdue' => 'warning',
-                                    'defaulted' => 'danger',
+                                    'forfeited' => 'danger',
                                     default => 'gray',
                                 }),
                             Infolists\Components\TextEntry::make('branch.name')
@@ -80,7 +89,7 @@ class ViewLoan extends ViewRecord
                                 ->label('Categoría'),
                             Infolists\Components\TextEntry::make('item.appraised_value')
                                 ->label('Valor Tasado')
-                                ->money('USD'),
+                                ->money('GTQ'),
                         ])->columns(3),
                     ]),
 
@@ -89,27 +98,27 @@ class ViewLoan extends ViewRecord
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('loan_amount')
                                 ->label('Monto del Préstamo')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
                             Infolists\Components\TextEntry::make('interest_rate')
                                 ->label('Tasa de Interés')
                                 ->suffix('%'),
                             Infolists\Components\TextEntry::make('interest_amount')
                                 ->label('Interés')
-                                ->money('USD'),
+                                ->money('GTQ'),
                         ])->columns(3),
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('total_amount')
                                 ->label('Total a Pagar')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->weight('bold'),
                             Infolists\Components\TextEntry::make('amount_paid')
                                 ->label('Total Pagado')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->color('success'),
                             Infolists\Components\TextEntry::make('balance_remaining')
                                 ->label('Saldo Pendiente')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
                                 ->weight('bold'),
                         ])->columns(3),
@@ -160,7 +169,7 @@ class ViewLoan extends ViewRecord
                                         if ($daysRemaining < 0) {
                                             return abs(round($daysRemaining)) . ' días vencido';
                                         } else {
-                                            return $daysRemaining . ' días restantes';
+                                            return round($daysRemaining) . ' días restantes';
                                         }
                                     })
                                     ->badge()

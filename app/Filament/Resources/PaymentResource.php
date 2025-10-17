@@ -70,7 +70,7 @@ class PaymentResource extends Resource
                                     ->label('Monto')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->minValue(0)
                                     ->rules([
@@ -156,7 +156,7 @@ class PaymentResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Monto')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('payment_date')
                     ->label('Fecha')

@@ -102,7 +102,7 @@ class CustomerResource extends Resource
                                 Forms\Components\TextInput::make('country')
                                     ->label('País')
                                     ->required()
-                                    ->default('Argentina')
+                                    ->default('Guatemala')
                                     ->maxLength(100),
                             ]),
                     ]),
@@ -119,8 +119,11 @@ class CustomerResource extends Resource
                                     ->maxLength(200),
                                 Forms\Components\TextInput::make('monthly_income')
                                     ->label('Ingreso Mensual')
+                                    ->required()
+                                    ->minValue(1)
                                     ->numeric()
-                                    ->prefix('$'),
+                                    ->prefix('Q')
+                                    ->helperText('Ingreso mensual del cliente (requerido para evaluación de crédito)'),
                             ]),
                     ]),
 
@@ -131,11 +134,11 @@ class CustomerResource extends Resource
                                 Forms\Components\TextInput::make('phone')
                                     ->label('Teléfono')
                                     ->tel()
-                                    ->maxLength(20),
+                                    ->maxLength(8),
                                 Forms\Components\TextInput::make('mobile')
                                     ->label('Móvil')
                                     ->tel()
-                                    ->maxLength(20),
+                                    ->maxLength(8),
                                 Forms\Components\TextInput::make('email')
                                     ->label('Correo Electrónico')
                                     ->email()
@@ -172,8 +175,9 @@ class CustomerResource extends Resource
                                     ->label('Límite de Crédito')
                                     ->required()
                                     ->numeric()
-                                    ->default(0)
-                                    ->prefix('$'),
+                                    ->default(4000)
+                                    ->prefix('Q')
+                                    ->helperText('Se calculará automáticamente el límite recomendado después de crear el cliente.'),
                                 Forms\Components\DatePicker::make('registration_date')
                                     ->label('Fecha de Registro')
                                     ->required()
@@ -241,7 +245,7 @@ class CustomerResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('credit_limit')
                     ->label('Límite de Crédito')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('credit_score')
@@ -256,7 +260,7 @@ class CustomerResource extends Resource
                     })
                     ->formatStateUsing(fn ($state, $record) => $state
                         ? $state . ' (' . ucfirst($record->credit_rating ?? 'N/A') . ')'
-                        : 'Sin calcular'
+                        : 'Sin Historial'
                     )
                     ->sortable()
                     ->toggleable(),
@@ -284,17 +288,29 @@ class CustomerResource extends Resource
                     ->icon('heroicon-o-calculator')
                     ->color('info')
                     ->requiresConfirmation()
+                    ->modalHeading('Calcular Puntaje de Crédito')
+                    ->modalDescription('Esto recalculará el puntaje basado en el historial actual. Requiere al menos 1 préstamo completado.')
                     ->action(function (Customer $record) {
                         $service = new CreditScoreService();
                         $service->updateCustomerCreditScore($record);
 
-                        Notification::make()
-                            ->success()
-                            ->title('Puntaje de Crédito Actualizado')
-                            ->body("Puntaje: {$record->credit_score} ({$record->credit_rating})")
-                            ->send();
+                        if ($record->credit_score === null) {
+                            Notification::make()
+                                ->warning()
+                                ->title('Sin Historial Suficiente')
+                                ->body('El cliente necesita al menos 1 préstamo completado (pagado o confiscado) para calcular un puntaje crediticio.')
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->success()
+                                ->title('Puntaje de Crédito Actualizado')
+                                ->body("Puntaje: {$record->credit_score} ({$record->credit_rating})")
+                                ->send();
+                        }
                     })
-                    ->hidden(fn (Customer $record) => $record->loans()->count() === 0),
+                    ->hidden(fn (Customer $record) =>
+                        $record->loans()->whereIn('status', [\App\Models\Loan::STATUS_PAID, \App\Models\Loan::STATUS_FORFEITED])->count() === 0
+                    ),
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
@@ -311,6 +327,7 @@ class CustomerResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\ItemsRelationManager::class,
             RelationManagers\LoansRelationManager::class,
             RelationManagers\PaymentsRelationManager::class,
             RelationManagers\SalesRelationManager::class,

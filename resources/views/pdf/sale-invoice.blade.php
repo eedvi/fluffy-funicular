@@ -145,11 +145,11 @@
         </tr>
         <tr>
             <td>Método de Pago:</td>
-            <td>{{ $sale->payment_method }}</td>
+            <td>{{ \App\Helpers\TranslationHelper::translatePaymentMethod($sale->payment_method) }}</td>
         </tr>
         <tr>
             <td>Estado:</td>
-            <td>{{ $sale->status }}</td>
+            <td>{{ \App\Helpers\TranslationHelper::translateSaleStatus($sale->status) }}</td>
         </tr>
         @if($sale->delivery_date)
         <tr>
@@ -211,7 +211,7 @@
             @endif
             <tr>
                 <td><strong>Condición:</strong></td>
-                <td>{{ $sale->item->condition }}</td>
+                <td>{{ \App\Helpers\TranslationHelper::translateItemCondition($sale->item->condition) }}</td>
             </tr>
             @if($sale->item->description)
             <tr>

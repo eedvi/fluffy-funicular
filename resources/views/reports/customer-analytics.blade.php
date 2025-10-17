@@ -53,9 +53,9 @@
                 <td class="text-center">{{ $data['total_loans'] }}</td>
                 <td class="text-center">{{ $data['active_loans'] }}</td>
                 <td class="text-center">{{ $data['paid_loans'] }}</td>
-                <td class="text-right">${{ number_format($data['total_borrowed'], 2) }}</td>
-                <td class="text-right">${{ number_format($data['total_purchased'], 2) }}</td>
-                <td class="text-right"><strong>${{ number_format($data['total_business'], 2) }}</strong></td>
+                <td class="text-right">Q{{ number_format($data['total_borrowed'], 2) }}</td>
+                <td class="text-right">Q{{ number_format($data['total_purchased'], 2) }}</td>
+                <td class="text-right"><strong>Q{{ number_format($data['total_business'], 2) }}</strong></td>
             </tr>
             @endforeach
         </tbody>
@@ -76,17 +76,17 @@
 
         <div class="summary-row">
             <span class="summary-label">Total Monto Prestado:</span>
-            <span class="summary-value">${{ number_format($totals['total_borrowed'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['total_borrowed'], 2) }}</span>
         </div>
 
         <div class="summary-row">
             <span class="summary-label">Total Monto en Compras:</span>
-            <span class="summary-value">${{ number_format($totals['total_purchased'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['total_purchased'], 2) }}</span>
         </div>
 
         <div class="summary-row" style="border-top: 2px solid #f59e0b; padding-top: 10px; margin-top: 10px; font-size: 12px; color: #92400e;">
             <span class="summary-label">VOLUMEN TOTAL DE NEGOCIO:</span>
-            <span class="summary-value">${{ number_format($totals['total_business'], 2) }}</span>
+            <span class="summary-value">Q{{ number_format($totals['total_business'], 2) }}</span>
         </div>
     </div>
 

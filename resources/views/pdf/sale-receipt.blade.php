@@ -17,17 +17,17 @@
         </div>
         <div class="info-row">
             <span class="info-label">Método de Pago:</span>
-            <span class="info-value">{{ ucfirst($sale->payment_method) }}</span>
+            <span class="info-value">{{ \App\Helpers\TranslationHelper::translatePaymentMethod($sale->payment_method) }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Estado:</span>
             <span class="info-value">
                 @if($sale->status === 'delivered')
-                    <strong style="color: #10b981;">✓ Entregado</strong>
+                    <strong style="color: #10b981;">✓ {{ \App\Helpers\TranslationHelper::translateSaleStatus($sale->status) }}</strong>
                 @elseif($sale->status === 'pending')
-                    <strong style="color: #f59e0b;">⏳ Pendiente</strong>
+                    <strong style="color: #f59e0b;">⏳ {{ \App\Helpers\TranslationHelper::translateSaleStatus($sale->status) }}</strong>
                 @else
-                    <strong style="color: #ef4444;">✗ Cancelado</strong>
+                    <strong style="color: #ef4444;">✗ {{ \App\Helpers\TranslationHelper::translateSaleStatus($sale->status) }}</strong>
                 @endif
             </span>
         </div>
@@ -83,7 +83,7 @@
         @endif
         <div class="info-row">
             <span class="info-label">Estado:</span>
-            <span class="info-value">{{ ucfirst($sale->item->condition) }}</span>
+            <span class="info-value">{{ \App\Helpers\TranslationHelper::translateItemCondition($sale->item->condition) }}</span>
         </div>
     </div>
 

@@ -35,10 +35,10 @@
                 <td>{{ $loan->loan_number }}</td>
                 <td>{{ $loan->customer->full_name }}</td>
                 <td>{{ $loan->item->name }}</td>
-                <td class="text-right">${{ number_format($loan->total_amount, 2) }}</td>
-                <td class="text-right">${{ number_format($loan->balance_remaining, 2) }}</td>
+                <td class="text-right">Q{{ number_format($loan->total_amount, 2) }}</td>
+                <td class="text-right">Q{{ number_format($loan->balance_remaining, 2) }}</td>
                 <td>{{ $loan->due_date->format('d/m/Y') }}</td>
-                <td>{{ $loan->status }}</td>
+                <td>{{ \App\Helpers\TranslationHelper::translateLoanStatus($loan->status) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -46,8 +46,8 @@
 
     <div class="summary">
         <p>Total de préstamos activos: {{ $loans->count() }}</p>
-        <p>Monto total prestado: ${{ number_format($loans->sum('loan_amount'), 2) }}</p>
-        <p>Saldo total pendiente: ${{ number_format($loans->sum('balance_remaining'), 2) }}</p>
+        <p>Monto total prestado: Q{{ number_format($loans->sum('loan_amount'), 2) }}</p>
+        <p>Saldo total pendiente: Q{{ number_format($loans->sum('balance_remaining'), 2) }}</p>
     </div>
 </body>
 </html>

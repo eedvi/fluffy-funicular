@@ -42,7 +42,7 @@
         </div>
         <div class="info-row">
             <span class="info-label">Categoría:</span>
-            <span class="info-value">{{ $loan->item->category }}</span>
+            <span class="info-value">{{ $loan->item->category->name }}</span>
         </div>
         @if($loan->item->brand)
         <div class="info-row">
@@ -64,11 +64,11 @@
         @endif
         <div class="info-row">
             <span class="info-label">Estado:</span>
-            <span class="info-value">{{ ucfirst($loan->item->condition) }}</span>
+            <span class="info-value">{{ \App\Helpers\TranslationHelper::translateItemCondition($loan->item->condition) }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Valor Tasado:</span>
-            <span class="info-value"><strong>${{ number_format($loan->item->appraised_value, 2) }}</strong></span>
+            <span class="info-value"><strong>GTQ{{ number_format($loan->item->appraised_value, 2) }}</strong></span>
         </div>
     </div>
 
@@ -99,21 +99,21 @@
     <div class="totals-box">
         <div class="total-row">
             <span class="total-label">Monto del Préstamo:</span>
-            <span class="total-value">${{ number_format($loan->loan_amount, 2) }}</span>
+            <span class="total-value">GTQ{{ number_format($loan->loan_amount, 2) }}</span>
         </div>
         <div class="total-row">
             <span class="total-label">Interés ({{ number_format($loan->interest_rate, 2) }}%):</span>
-            <span class="total-value">${{ number_format($loan->interest_amount, 2) }}</span>
+            <span class="total-value">GTQ{{ number_format($loan->interest_amount, 2) }}</span>
         </div>
         <div class="total-row grand-total">
             <span class="total-label">TOTAL A PAGAR:</span>
-            <span class="total-value">${{ number_format($loan->total_amount, 2) }}</span>
+            <span class="total-value">GTQ{{ number_format($loan->total_amount, 2) }}</span>
         </div>
     </div>
 
     <!-- Important Notes -->
     <div class="notes-section">
-        <div class="notes-title">⚠️ TÉRMINOS Y CONDICIONES IMPORTANTES:</div>
+        <div class="notes-title">TÉRMINOS Y CONDICIONES IMPORTANTES:</div>
         <div class="notes-content">
             <p style="margin-bottom: 8px;">
                 <strong>1. PLAZO:</strong> Este préstamo vence el <strong>{{ $loan->due_date->format('d/m/Y') }}</strong>.

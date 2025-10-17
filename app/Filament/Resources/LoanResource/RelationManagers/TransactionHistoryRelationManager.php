@@ -48,7 +48,7 @@ class TransactionHistoryRelationManager extends RelationManager
                     }),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('Monto')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -112,7 +112,7 @@ class TransactionHistoryRelationManager extends RelationManager
                                 ->date('d/m/Y H:i'),
                             Infolists\Components\TextEntry::make('amount')
                                 ->label('Monto')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
                                 ->weight('bold'),
                         ])->columns(3),
@@ -160,14 +160,14 @@ class TransactionHistoryRelationManager extends RelationManager
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('loan.total_amount')
                                 ->label('Total del Préstamo')
-                                ->money('USD'),
+                                ->money('GTQ'),
                             Infolists\Components\TextEntry::make('loan.amount_paid')
                                 ->label('Total Pagado')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->color('success'),
                             Infolists\Components\TextEntry::make('loan.balance_remaining')
                                 ->label('Saldo Pendiente')
-                                ->money('USD')
+                                ->money('GTQ')
                                 ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
                                 ->weight('bold'),
                         ])->columns(3),

@@ -152,7 +152,7 @@ class LoanRenewalResource extends Resource
                                     ->label('Monto de Interés')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->disabled()
                                     ->dehydrated()
                                     ->helperText('Calculado automáticamente'),
@@ -161,7 +161,7 @@ class LoanRenewalResource extends Resource
                                     ->label('Comisión por Renovación')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->minValue(0)
                                     ->helperText('Opcional: cargo adicional por renovación'),
@@ -217,19 +217,19 @@ class LoanRenewalResource extends Resource
 
                 Tables\Columns\TextColumn::make('interest_amount')
                     ->label('Interés')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('renewal_fee')
                     ->label('Comisión')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('total_cost')
                     ->label('Costo Total')
                     ->getStateUsing(fn ($record) => $record->interest_amount + $record->renewal_fee)
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable()
                     ->badge()
                     ->color('warning'),

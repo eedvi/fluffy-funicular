@@ -87,7 +87,7 @@ class LoanResource extends Resource
                                     ->label('Monto del Préstamo')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (Get $get, Set $set) {
@@ -120,7 +120,7 @@ class LoanResource extends Resource
                                     ->label('Monto de Interés')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(),
@@ -128,14 +128,14 @@ class LoanResource extends Resource
                                     ->label('Monto Total')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0)
                                     ->disabled()
                                     ->dehydrated(),
                                 Forms\Components\TextInput::make('balance_remaining')
                                     ->label('Saldo Pendiente')
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->disabled()
                                     ->dehydrated(false),
                             ]),
@@ -199,12 +199,11 @@ class LoanResource extends Resource
         $loanAmount = (float) $get('loan_amount') ?: 0;
         $interestRate = (float) $get('interest_rate') ?: 0;
 
-        $interestAmount = $loanAmount * ($interestRate / 100);
-        $totalAmount = $loanAmount + $interestAmount;
+        $amounts = Loan::calculateLoanAmounts($loanAmount, $interestRate);
 
-        $set('interest_amount', round($interestAmount, 2));
-        $set('total_amount', round($totalAmount, 2));
-        $set('balance_remaining', round($totalAmount, 2));
+        $set('interest_amount', $amounts['interest_amount']);
+        $set('total_amount', $amounts['total_amount']);
+        $set('balance_remaining', $amounts['balance_remaining']);
     }
 
     protected static function calculateDueDate(Get $get, Set $set): void
@@ -213,8 +212,8 @@ class LoanResource extends Resource
         $loanTermDays = (int) $get('loan_term_days') ?: 30;
 
         if ($startDate) {
-            $dueDate = \Carbon\Carbon::parse($startDate)->addDays($loanTermDays);
-            $set('due_date', $dueDate->format('Y-m-d'));
+            $dueDate = Loan::calculateDueDate($startDate, $loanTermDays);
+            $set('due_date', $dueDate);
         }
     }
 
@@ -243,15 +242,15 @@ class LoanResource extends Resource
                     ->limit(30),
                 Tables\Columns\TextColumn::make('loan_amount')
                     ->label('Monto')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('total_amount')
                     ->label('Total')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('balance_remaining')
                     ->label('Saldo')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Estado')
@@ -354,14 +353,14 @@ class LoanResource extends Resource
                             ->label('Cargo por Renovación')
                             ->required()
                             ->numeric()
-                            ->prefix('$')
+                            ->prefix('Q')
                             ->default(0)
                             ->minValue(0),
                         Forms\Components\TextInput::make('interest_amount')
                             ->label('Monto de Interés')
                             ->required()
                             ->numeric()
-                            ->prefix('$')
+                            ->prefix('Q')
                             ->disabled()
                             ->dehydrated()
                             ->default(fn (Loan $record) => round($record->loan_amount * ($record->interest_rate / 100), 2)),
@@ -459,7 +458,7 @@ class LoanResource extends Resource
                             ->label('Monto')
                             ->required()
                             ->numeric()
-                            ->prefix('$')
+                            ->prefix('Q')
                             ->default($record->balance_remaining)
                             ->minValue(0.01),
                         Forms\Components\Select::make('payment_method')

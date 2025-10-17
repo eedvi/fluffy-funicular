@@ -50,7 +50,7 @@ class BranchResource extends Resource
                                 Forms\Components\TextInput::make('phone')
                                     ->label('Teléfono')
                                     ->tel()
-                                    ->maxLength(20),
+                                    ->maxLength(8),
                                 Forms\Components\TextInput::make('email')
                                     ->label('Email')
                                     ->email()

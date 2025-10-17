@@ -5,6 +5,8 @@ namespace App\Filament\Resources\ItemTransferResource\Pages;
 use App\Filament\Resources\ItemTransferResource;
 use App\Models\ItemTransfer;
 use Filament\Actions;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Notifications\Notification;
 
@@ -88,5 +90,105 @@ class ViewItemTransfer extends ViewRecord
 
             Actions\DeleteAction::make(),
         ];
+    }
+
+    public function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Información de la Transferencia')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('transfer_number')
+                                ->label('Número de Transferencia')
+                                ->weight('bold'),
+                            Infolists\Components\TextEntry::make('status')
+                                ->label('Estado')
+                                ->badge()
+                                ->formatStateUsing(fn (?string $state): string => match ($state) {
+                                    'pending' => 'Pendiente',
+                                    'in_transit' => 'En Tránsito',
+                                    'received' => 'Recibido',
+                                    'cancelled' => 'Cancelado',
+                                    default => $state ?? 'N/A',
+                                })
+                                ->color(fn (?string $state): string => match ($state) {
+                                    'pending' => 'warning',
+                                    'in_transit' => 'info',
+                                    'received' => 'success',
+                                    'cancelled' => 'danger',
+                                    default => 'gray',
+                                }),
+                            Infolists\Components\TextEntry::make('transfer_date')
+                                ->label('Fecha de Transferencia')
+                                ->date('d/m/Y H:i'),
+                        ])->columns(3),
+                    ]),
+
+                Infolists\Components\Section::make('Artículo Transferido')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('item.name')
+                                ->label('Nombre del Artículo')
+                                ->weight('bold')
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
+                            Infolists\Components\TextEntry::make('item.category')
+                                ->label('Categoría'),
+                            Infolists\Components\TextEntry::make('item.appraised_value')
+                                ->label('Valor Tasado')
+                                ->money('GTQ'),
+                        ])->columns(3),
+                    ]),
+
+                Infolists\Components\Section::make('Sucursales')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('fromBranch.name')
+                                ->label('Sucursal Origen')
+                                ->badge()
+                                ->color('gray'),
+                            Infolists\Components\TextEntry::make('toBranch.name')
+                                ->label('Sucursal Destino')
+                                ->badge()
+                                ->color('success'),
+                        ])->columns(2),
+                    ]),
+
+                Infolists\Components\Section::make('Seguimiento')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('requestedBy.name')
+                                ->label('Solicitado Por')
+                                ->badge()
+                                ->color('info'),
+                            Infolists\Components\TextEntry::make('sent_date')
+                                ->label('Fecha de Envío')
+                                ->date('d/m/Y H:i')
+                                ->placeholder('No enviado aún'),
+                            Infolists\Components\TextEntry::make('received_date')
+                                ->label('Fecha de Recepción')
+                                ->date('d/m/Y H:i')
+                                ->placeholder('No recibido aún'),
+                        ])->columns(3),
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('receivedBy.name')
+                                ->label('Recibido Por')
+                                ->badge()
+                                ->color('success')
+                                ->placeholder('Pendiente'),
+                        ])->columns(1)
+                            ->visible(fn ($record) => $record->received_by !== null),
+                    ])
+                    ->collapsed(),
+
+                Infolists\Components\Section::make('Notas')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('notes')
+                            ->label('')
+                            ->placeholder('Sin notas')
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn ($record) => !empty($record->notes)),
+            ]);
     }
 }

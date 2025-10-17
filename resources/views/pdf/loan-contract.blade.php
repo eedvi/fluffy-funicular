@@ -142,7 +142,7 @@
             @endif
             <tr>
                 <td>Condición:</td>
-                <td>{{ $loan->item->condition }}</td>
+                <td>{{ \App\Helpers\TranslationHelper::translateItemCondition($loan->item->condition) }}</td>
             </tr>
             <tr>
                 <td>Valor Tasado:</td>
@@ -154,7 +154,7 @@
         <table class="info-table">
             <tr>
                 <td>Monto del Préstamo:</td>
-                <td>${{ number_format($loan->loan_amount, 2) }}</td>
+                <td>GTQ{{ number_format($loan->loan_amount, 2) }}</td>
             </tr>
             <tr>
                 <td>Tasa de Interés:</td>
@@ -162,11 +162,11 @@
             </tr>
             <tr>
                 <td>Monto de Interés:</td>
-                <td>${{ number_format($loan->interest_amount, 2) }}</td>
+                <td>GTQ{{ number_format($loan->interest_amount, 2) }}</td>
             </tr>
             <tr>
                 <td>Monto Total a Pagar:</td>
-                <td><strong>${{ number_format($loan->total_amount, 2) }}</strong></td>
+                <td><strong>GTQ{{ number_format($loan->total_amount, 2) }}</strong></td>
             </tr>
             <tr>
                 <td>Plazo:</td>
@@ -219,7 +219,6 @@
 
     <div class="footer">
         <p>Este documento fue generado el {{ now()->format('d/m/Y H:i:s') }}</p>
-        <p>Casa de Empeño - Todos los derechos reservados</p>
     </div>
 </body>
 </html>

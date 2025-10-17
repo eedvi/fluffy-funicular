@@ -29,7 +29,7 @@
                         Valor Estimado del Artículo
                     </div>
                     <div class="mt-2 text-3xl font-bold text-success-900 dark:text-success-100">
-                        ${{ number_format($calculatedValue, 2) }}
+                        Q{{ number_format($calculatedValue, 2) }}
                     </div>
                 </div>
 
@@ -38,7 +38,7 @@
                         Monto de Préstamo Sugerido
                     </div>
                     <div class="mt-2 text-3xl font-bold text-primary-900 dark:text-primary-100">
-                        ${{ number_format($suggestedLoanAmount, 2) }}
+                        Q{{ number_format($suggestedLoanAmount, 2) }}
                     </div>
                     <div class="mt-2 text-xs text-gray-600 dark:text-gray-400">
                         {{ round(($suggestedLoanAmount / $calculatedValue) * 100, 1) }}% del valor estimado

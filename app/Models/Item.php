@@ -22,6 +22,7 @@ class Item extends Model
         'name',
         'description',
         'category_id',
+        'customer_id',
         'brand',
         'model',
         'serial_number',
@@ -76,6 +77,11 @@ class Item extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     public function loans(): HasMany

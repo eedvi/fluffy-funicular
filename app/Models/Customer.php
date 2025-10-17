@@ -79,6 +79,11 @@ class Customer extends Model
         return $this->hasMany(Loan::class)->whereIn('status', ['active', 'overdue']);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(Item::class);
+    }
+
     public function sales(): HasMany
     {
         return $this->hasMany(Sale::class);

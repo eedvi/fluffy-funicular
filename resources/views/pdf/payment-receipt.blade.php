@@ -17,15 +17,15 @@
         </div>
         <div class="info-row">
             <span class="info-label">Método de Pago:</span>
-            <span class="info-value">{{ ucfirst($payment->payment_method) }}</span>
+            <span class="info-value">{{ \App\Helpers\TranslationHelper::translatePaymentMethod($payment->payment_method) }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Estado:</span>
             <span class="info-value">
-                @if($payment->status === 'Completado')
-                    <strong style="color: #10b981;">✓ {{ $payment->status }}</strong>
+                @if($payment->status === 'completed')
+                    <strong style="color: #10b981;">✓ {{ \App\Helpers\TranslationHelper::translatePaymentStatus($payment->status) }}</strong>
                 @else
-                    <strong style="color: #f59e0b;">⏳ {{ $payment->status }}</strong>
+                    <strong style="color: #f59e0b;">⏳ {{ \App\Helpers\TranslationHelper::translatePaymentStatus($payment->status) }}</strong>
                 @endif
             </span>
         </div>

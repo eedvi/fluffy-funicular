@@ -38,10 +38,10 @@
                 <td>{{ $sale->sale_date->format('d/m/Y') }}</td>
                 <td>{{ $sale->customer ? $sale->customer->full_name : 'N/A' }}</td>
                 <td>{{ $sale->item->name }}</td>
-                <td class="text-right">${{ number_format($sale->sale_price, 2) }}</td>
-                <td class="text-right">${{ number_format($sale->discount, 2) }}</td>
-                <td class="text-right">${{ number_format($sale->final_price, 2) }}</td>
-                <td>{{ $sale->status }}</td>
+                <td class="text-right">Q{{ number_format($sale->sale_price, 2) }}</td>
+                <td class="text-right">Q{{ number_format($sale->discount, 2) }}</td>
+                <td class="text-right">Q{{ number_format($sale->final_price, 2) }}</td>
+                <td>{{ \App\Helpers\TranslationHelper::translateSaleStatus($sale->status) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -49,8 +49,8 @@
 
     <div class="summary">
         <p>Total de ventas: {{ $sales->count() }}</p>
-        <p>Total descuentos: ${{ number_format($totalDiscount, 2) }}</p>
-        <p>Total ingresos: ${{ number_format($totalSales, 2) }}</p>
+        <p>Total descuentos: Q{{ number_format($totalDiscount, 2) }}</p>
+        <p>Total ingresos: Q{{ number_format($totalSales, 2) }}</p>
     </div>
 </body>
 </html>

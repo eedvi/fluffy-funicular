@@ -96,6 +96,15 @@ class ItemResource extends Resource
                                     ->required()
                                     ->searchable()
                                     ->helperText('Sucursal donde se registra el artículo'),
+                                Forms\Components\Select::make('customer_id')
+                                    ->label('Cliente')
+                                    ->relationship('customer', 'first_name')
+                                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->first_name . ' ' . $record->last_name)
+                                    ->searchable(['first_name', 'last_name'])
+                                    ->required()
+                                    ->preload()
+                                    ->helperText('Cliente propietario del artículo')
+                                    ->columnSpan(2),
                             ]),
                         Forms\Components\Textarea::make('description')
                             ->label('Descripción')
@@ -111,20 +120,20 @@ class ItemResource extends Resource
                                     ->label('Valor Tasado')
                                     ->required()
                                     ->numeric()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->default(0),
                                 Forms\Components\TextInput::make('market_value')
                                     ->label('Valor de Mercado')
                                     ->numeric()
-                                    ->prefix('$'),
+                                    ->prefix('Q'),
                                 Forms\Components\TextInput::make('purchase_price')
                                     ->label('Precio de Compra')
                                     ->numeric()
-                                    ->prefix('$'),
+                                    ->prefix('Q'),
                                 Forms\Components\TextInput::make('sale_price')
                                     ->label('Precio de Venta')
                                     ->numeric()
-                                    ->prefix('$'),
+                                    ->prefix('Q'),
                             ]),
                     ]),
 
@@ -184,6 +193,11 @@ class ItemResource extends Resource
                     ->color('info')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('customer.full_name')
+                    ->label('Cliente')
+                    ->searchable(['first_name', 'last_name'])
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('Categoría')
                     ->searchable()
@@ -196,11 +210,11 @@ class ItemResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('appraised_value')
                     ->label('Valor Tasado')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sale_price')
                     ->label('Precio Venta')
-                    ->money('USD')
+                    ->money('GTQ')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('status')

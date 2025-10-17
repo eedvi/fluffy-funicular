@@ -36,8 +36,8 @@
                 <td>{{ $payment->payment_date->format('d/m/Y') }}</td>
                 <td>{{ $payment->loan->loan_number }}</td>
                 <td>{{ $payment->loan->customer->full_name }}</td>
-                <td class="text-right">${{ number_format($payment->amount, 2) }}</td>
-                <td>{{ $payment->payment_method }}</td>
+                <td class="text-right">Q{{ number_format($payment->amount, 2) }}</td>
+                <td>{{ \App\Helpers\TranslationHelper::translatePaymentMethod($payment->payment_method) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -45,7 +45,7 @@
 
     <div class="summary">
         <p>Total de pagos: {{ $payments->count() }}</p>
-        <p>Total recibido: ${{ number_format($totalPayments, 2) }}</p>
+        <p>Total recibido: Q{{ number_format($totalPayments, 2) }}</p>
     </div>
 </body>
 </html>

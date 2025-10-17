@@ -37,7 +37,7 @@
                 <td>{{ $loan->customer->full_name }}</td>
                 <td>{{ $loan->customer->phone }}</td>
                 <td>{{ $loan->item->name }}</td>
-                <td class="text-right">${{ number_format($loan->balance_remaining, 2) }}</td>
+                <td class="text-right">Q{{ number_format($loan->balance_remaining, 2) }}</td>
                 <td class="overdue">{{ $loan->due_date->format('d/m/Y') }}</td>
                 <td class="overdue">{{ $loan->due_date->diffInDays(now()) }}</td>
             </tr>
@@ -47,7 +47,7 @@
 
     <div class="summary">
         <p>Total de préstamos vencidos: {{ $loans->count() }}</p>
-        <p>Saldo total vencido: ${{ number_format($loans->sum('balance_remaining'), 2) }}</p>
+        <p>Saldo total vencido: Q{{ number_format($loans->sum('balance_remaining'), 2) }}</p>
     </div>
 </body>
 </html>

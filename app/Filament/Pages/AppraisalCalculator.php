@@ -79,7 +79,7 @@ class AppraisalCalculator extends Page implements HasForms
                                     ->numeric()
                                     ->required()
                                     ->default(60)
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->helperText('Precio actual del oro por gramo')
                                     ->reactive(),
                             ]),
@@ -104,7 +104,7 @@ class AppraisalCalculator extends Page implements HasForms
                                     ->label('Precio de Compra Original')
                                     ->numeric()
                                     ->required()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->reactive(),
                                 Forms\Components\TextInput::make('age_months')
                                     ->label('Edad (meses)')
@@ -137,7 +137,7 @@ class AppraisalCalculator extends Page implements HasForms
                                     ->label('Valor Estimado')
                                     ->numeric()
                                     ->required()
-                                    ->prefix('$')
+                                    ->prefix('Q')
                                     ->reactive(),
                                 Forms\Components\Select::make('general_condition')
                                     ->label('Condición')

@@ -48,7 +48,7 @@ class UserResource extends Resource
                                 Forms\Components\TextInput::make('phone')
                                     ->label('Teléfono')
                                     ->tel()
-                                    ->maxLength(20),
+                                    ->maxLength(8),
                                 Forms\Components\Select::make('roles')
                                     ->label('Rol')
                                     ->relationship('roles', 'name')
