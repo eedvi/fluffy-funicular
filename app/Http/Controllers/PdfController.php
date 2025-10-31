@@ -92,7 +92,8 @@ class PdfController extends Controller
         $branch = $payment->branch;
         $this->logPdfGeneration('Recibo de Pago', $payment, 'view');
 
-        $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
+        $pdf = Pdf::loadView('pdf.payment-receipt-ticket', compact('payment', 'branch'))
+            ->setPaper([0, 0, 226.77, 566.93], 'portrait'); // 80mm x 200mm (ticket format)
 
         return $pdf->stream('recibo-pago-' . $payment->payment_number . '.pdf');
     }
@@ -108,7 +109,8 @@ class PdfController extends Controller
         $branch = $payment->branch;
         $this->logPdfGeneration('Recibo de Pago', $payment, 'download');
 
-        $pdf = Pdf::loadView('pdf.payment-receipt', compact('payment', 'branch'));
+        $pdf = Pdf::loadView('pdf.payment-receipt-ticket', compact('payment', 'branch'))
+            ->setPaper([0, 0, 226.77, 566.93], 'portrait'); // 80mm x 200mm (ticket format)
 
         return $pdf->download('recibo-pago-' . $payment->payment_number . '.pdf');
     }
@@ -122,7 +124,8 @@ class PdfController extends Controller
         $branch = $sale->branch;
         $this->logPdfGeneration('Comprobante de Venta', $sale, 'view');
 
-        $pdf = Pdf::loadView('pdf.sale-receipt', compact('sale', 'branch'));
+        $pdf = Pdf::loadView('pdf.sale-receipt-ticket', compact('sale', 'branch'))
+            ->setPaper([0, 0, 226.77, 566.93], 'portrait'); // 80mm x 200mm (ticket format)
 
         return $pdf->stream('comprobante-venta-' . $sale->sale_number . '.pdf');
     }
@@ -136,7 +139,8 @@ class PdfController extends Controller
         $branch = $sale->branch;
         $this->logPdfGeneration('Comprobante de Venta', $sale, 'download');
 
-        $pdf = Pdf::loadView('pdf.sale-receipt', compact('sale', 'branch'));
+        $pdf = Pdf::loadView('pdf.sale-receipt-ticket', compact('sale', 'branch'))
+            ->setPaper([0, 0, 226.77, 566.93], 'portrait'); // 80mm x 200mm (ticket format)
 
         return $pdf->download('comprobante-venta-' . $sale->sale_number . '.pdf');
     }

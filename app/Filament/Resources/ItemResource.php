@@ -151,7 +151,8 @@ class ItemResource extends Resource
                                         'forfeited' => 'Confiscado',
                                     ])
                                     ->default('available')
-                                    ->native(false),
+                                    ->native(false)
+                                    ->live(),
                                 Forms\Components\DatePicker::make('acquired_date')
                                     ->label('Fecha de Adquisición')
                                     ->required()
@@ -162,20 +163,47 @@ class ItemResource extends Resource
                             ->label('Notas')
                             ->rows(3)
                             ->columnSpanFull(),
-                        // Forms\Components\FileUpload::make('photos')
-                        //     ->label('Fotos del Artículo')
-                        //     ->image()
-                        //     ->multiple()
-                        //     ->maxFiles(5)
-                        //     ->maxSize(10240)
-                        //     ->directory('items')
-                        //     ->imagePreviewHeight('250')
-                        //     ->panelLayout('grid')
-                        //     ->reorderable()
-                        //     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
-                        //     ->columnSpanFull()
-                        //     ->helperText('Puede subir hasta 5 imágenes (máx. 10MB cada una). Formatos: JPG, PNG, WEBP'),
                     ]),
+
+                Forms\Components\Section::make('Información de Confiscación')
+                    ->schema([
+                        Forms\Components\Grid::make(3)
+                            ->schema([
+                                Forms\Components\DatePicker::make('confiscated_date')
+                                    ->label('Fecha de Confiscación')
+                                    ->displayFormat('d/m/Y')
+                                    ->helperText('Fecha en que se confiscó el artículo'),
+                                Forms\Components\TextInput::make('auction_price')
+                                    ->label('Precio de Subasta')
+                                    ->numeric()
+                                    ->prefix('Q')
+                                    ->helperText('Precio establecido para la subasta'),
+                                Forms\Components\DatePicker::make('auction_date')
+                                    ->label('Fecha de Subasta')
+                                    ->displayFormat('d/m/Y')
+                                    ->helperText('Fecha programada para la subasta'),
+                            ]),
+                        Forms\Components\Textarea::make('confiscation_notes')
+                            ->label('Notas de Confiscación')
+                            ->rows(3)
+                            ->columnSpanFull()
+                            ->helperText('Detalles sobre el proceso de confiscación'),
+                    ])
+                    ->visible(fn (Forms\Get $get) => $get('status') === 'forfeited')
+                    ->collapsed(),
+                // Forms\Components\FileUpload::make('photos')
+                //     ->label('Fotos del Artículo')
+                //     ->image()
+                //     ->multiple()
+                //     ->maxFiles(5)
+                //     ->maxSize(10240)
+                //     ->directory('items')
+                //     ->imagePreviewHeight('250')
+                //     ->panelLayout('grid')
+                //     ->reorderable()
+                //     ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
+                //     ->columnSpanFull()
+                //     ->helperText('Puede subir hasta 5 imágenes (máx. 10MB cada una). Formatos: JPG, PNG, WEBP'),
             ]);
     }
 

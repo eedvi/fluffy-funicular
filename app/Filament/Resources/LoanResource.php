@@ -425,9 +425,24 @@ class LoanResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Confiscar Artículo')
                     ->modalDescription('¿Está seguro de que desea confiscar este artículo? Esta acción actualizará el estado del préstamo a "Confiscado" y el artículo asociado también será marcado como confiscado.')
+                    ->form([
+                        Forms\Components\Textarea::make('confiscation_notes')
+                            ->label('Notas de Confiscación')
+                            ->rows(3)
+                            ->helperText('Opcional: Agregue detalles sobre el proceso de confiscación'),
+                        Forms\Components\TextInput::make('auction_price')
+                            ->label('Precio de Subasta (Opcional)')
+                            ->numeric()
+                            ->prefix('Q')
+                            ->helperText('Precio estimado para la subasta del artículo'),
+                        Forms\Components\DatePicker::make('auction_date')
+                            ->label('Fecha de Subasta (Opcional)')
+                            ->displayFormat('d/m/Y')
+                            ->helperText('Fecha programada para la subasta'),
+                    ])
                     ->modalSubmitActionLabel('Sí, Confiscar')
-                    ->action(function (Loan $record): void {
-                        \DB::transaction(function () use ($record) {
+                    ->action(function (Loan $record, array $data): void {
+                        \DB::transaction(function () use ($record, $data) {
                             $record->update([
                                 'status' => Loan::STATUS_FORFEITED,
                                 'forfeited_date' => now(),
@@ -436,6 +451,10 @@ class LoanResource extends Resource
                             if ($record->item) {
                                 $record->item->update([
                                     'status' => 'forfeited',
+                                    'confiscated_date' => now(),
+                                    'confiscation_notes' => $data['confiscation_notes'] ?? null,
+                                    'auction_price' => $data['auction_price'] ?? null,
+                                    'auction_date' => $data['auction_date'] ?? null,
                                 ]);
                             }
 

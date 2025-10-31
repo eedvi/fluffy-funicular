@@ -589,4 +589,107 @@ class Reports extends Page implements HasForms
             return null;
         }
     }
+
+    public function generateConfiscatedItemsReport(string $format = 'pdf')
+    {
+        try {
+            $formData = $this->form->getState();
+            $dateFrom = $formData['date_from'];
+            $dateTo = $formData['date_to'];
+            $branchId = $formData['branch_id'];
+
+            $query = Item::where('status', 'forfeited')
+                ->with(['branch', 'category', 'customer', 'loans' => function($q) {
+                    $q->where('status', 'forfeited')->latest();
+                }]);
+
+            if ($branchId) {
+                $query->where('branch_id', $branchId);
+            }
+
+            // Filter by confiscation date if available, otherwise use loan forfeited_date
+            $query->where(function($q) use ($dateFrom, $dateTo) {
+                $q->whereBetween('confiscated_date', [$dateFrom, $dateTo])
+                  ->orWhereHas('loans', function($lq) use ($dateFrom, $dateTo) {
+                      $lq->where('status', 'forfeited')
+                         ->whereBetween('forfeited_date', [$dateFrom, $dateTo]);
+                  });
+            });
+
+            $items = $query->orderBy('confiscated_date', 'desc')->get();
+
+            // Enrich items with loan information
+            $items->each(function($item) {
+                $forfeitedLoan = $item->loans->where('status', 'forfeited')->first();
+                $item->forfeited_loan = $forfeitedLoan;
+                $item->effective_confiscation_date = $item->confiscated_date ?? $forfeitedLoan?->forfeited_date;
+            });
+
+            if ($items->isEmpty()) {
+                \Filament\Notifications\Notification::make()
+                    ->warning()
+                    ->title('Sin datos')
+                    ->body('No hay artículos confiscados en el período seleccionado.')
+                    ->send();
+
+                return null;
+            }
+
+            $totalValue = $items->sum('appraised_value');
+            $totalAuctionPrice = $items->sum('auction_price');
+            $itemsWithAuction = $items->whereNotNull('auction_date')->count();
+            $itemsWithoutAuction = $items->whereNull('auction_date')->count();
+
+            // Group by category
+            $byCategory = $items->groupBy(fn($item) => $item->category?->name ?? 'Sin Categoría')->map(function ($categoryItems) {
+                return [
+                    'count' => $categoryItems->count(),
+                    'total_value' => $categoryItems->sum('appraised_value'),
+                ];
+            });
+
+            // Log the export
+            $this->logReportExport('Artículos Confiscados', $format, $branchId, [
+                'date_from' => $dateFrom,
+                'date_to' => $dateTo,
+                'total_items' => $items->count(),
+                'total_value' => $totalValue,
+            ]);
+
+            if ($format === 'pdf') {
+                $pdf = Pdf::loadView('reports.confiscated-items', compact(
+                    'items',
+                    'totalValue',
+                    'totalAuctionPrice',
+                    'itemsWithAuction',
+                    'itemsWithoutAuction',
+                    'byCategory',
+                    'dateFrom',
+                    'dateTo'
+                ));
+                return response()->streamDownload(
+                    fn () => print($pdf->output()),
+                    'articulos-confiscados-' . now()->format('Y-m-d') . '.pdf'
+                );
+            } else {
+                return Excel::download(
+                    new \App\Exports\ConfiscatedItemsExport($items),
+                    'articulos-confiscados-' . now()->format('Y-m-d') . '.xlsx'
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error generating confiscated items report', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            \Filament\Notifications\Notification::make()
+                ->danger()
+                ->title('Error al generar reporte')
+                ->body('Ocurrió un error al generar el reporte. Por favor intente nuevamente.')
+                ->send();
+
+            return null;
+        }
+    }
 }

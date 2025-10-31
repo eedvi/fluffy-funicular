@@ -34,7 +34,7 @@
             @foreach($items as $item)
             <tr>
                 <td>{{ $item->name }}</td>
-                <td>{{ $item->category }}</td>
+                <td>{{ $item->category->name }}</td>
                 <td>{{ \App\Helpers\TranslationHelper::translateItemStatus($item->status) }}</td>
                 <td>{{ \App\Helpers\TranslationHelper::translateItemCondition($item->condition) }}</td>
                 <td class="text-right">${{ number_format($item->appraised_value, 2) }}</td>

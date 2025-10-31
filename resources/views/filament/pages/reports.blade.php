@@ -217,5 +217,34 @@
                 </x-filament::button>
             </div>
         </x-filament::section>
+
+        {{-- Confiscated Items Report --}}
+        <x-filament::section>
+            <x-slot name="heading">
+                Artículos Confiscados
+            </x-slot>
+
+            <x-slot name="description">
+                Reporte detallado de artículos confiscados, incluyendo información de subastas y préstamos asociados
+            </x-slot>
+
+            <div class="flex gap-4">
+                <x-filament::button
+                    wire:click="generateConfiscatedItemsReport('pdf')"
+                    icon="heroicon-o-document-arrow-down"
+                    color="danger"
+                >
+                    Exportar PDF
+                </x-filament::button>
+
+                <x-filament::button
+                    wire:click="generateConfiscatedItemsReport('excel')"
+                    icon="heroicon-o-table-cells"
+                    color="success"
+                >
+                    Exportar Excel
+                </x-filament::button>
+            </div>
+        </x-filament::section>
     </div>
 </x-filament-panels::page>

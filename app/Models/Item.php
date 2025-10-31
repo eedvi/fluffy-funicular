@@ -37,6 +37,10 @@ class Item extends Model
         'notes',
         'acquired_date',
         'branch_id',
+        'confiscated_date',
+        'auction_price',
+        'auction_date',
+        'confiscation_notes',
     ];
 
     protected $casts = [
@@ -44,7 +48,10 @@ class Item extends Model
         'market_value' => 'decimal:2',
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        'auction_price' => 'decimal:2',
         'acquired_date' => 'date',
+        'confiscated_date' => 'date',
+        'auction_date' => 'date',
     ];
 
     protected $attributes = [
