@@ -25,8 +25,9 @@
                 <th>Cliente</th>
                 <th>Teléfono</th>
                 <th>Artículo</th>
+                <th>Plan de Pago</th>
                 <th class="text-right">Saldo</th>
-                <th>Vencimiento</th>
+                <th>Motivo Vencido</th>
                 <th>Días Vencido</th>
             </tr>
         </thead>
@@ -37,9 +38,47 @@
                 <td>{{ $loan->customer->full_name }}</td>
                 <td>{{ $loan->customer->phone }}</td>
                 <td>{{ $loan->item->name }}</td>
+                <td>
+                    @if($loan->payment_plan_type === 'installments')
+                        Cuotas
+                    @elseif($loan->requires_minimum_payment)
+                        Pago Mínimo
+                    @else
+                        Tradicional
+                    @endif
+                </td>
                 <td class="text-right">Q{{ number_format($loan->balance_remaining, 2) }}</td>
-                <td class="overdue">{{ $loan->due_date->format('d/m/Y') }}</td>
-                <td class="overdue">{{ $loan->due_date->diffInDays(now()) }}</td>
+                <td class="overdue">
+                    @if($loan->payment_plan_type === 'installments')
+                        @php
+                            $overdueInstallments = $loan->installments->where('status', 'overdue');
+                            $firstOverdue = $overdueInstallments->first();
+                        @endphp
+                        {{ $overdueInstallments->count() }} cuota(s) vencida(s)
+                        @if($firstOverdue)
+                            <br><small>Desde: {{ $firstOverdue->due_date->format('d/m/Y') }}</small>
+                        @endif
+                    @elseif($loan->requires_minimum_payment && $loan->is_at_risk)
+                        Pago mínimo no realizado
+                        @if($loan->grace_period_end_date)
+                            <br><small>Gracia hasta: {{ $loan->grace_period_end_date->format('d/m/Y') }}</small>
+                        @endif
+                    @else
+                        Vencido: {{ $loan->due_date ? $loan->due_date->format('d/m/Y') : 'N/A' }}
+                    @endif
+                </td>
+                <td class="overdue">
+                    @if($loan->payment_plan_type === 'installments')
+                        @php
+                            $firstOverdue = $loan->installments->where('status', 'overdue')->first();
+                        @endphp
+                        {{ $firstOverdue ? $firstOverdue->days_overdue : 0 }}
+                    @elseif($loan->requires_minimum_payment && $loan->next_minimum_payment_date)
+                        {{ $loan->next_minimum_payment_date->isPast() ? $loan->next_minimum_payment_date->diffInDays(now()) : 0 }}
+                    @else
+                        {{ $loan->due_date ? $loan->due_date->diffInDays(now()) : 0 }}
+                    @endif
+                </td>
             </tr>
             @endforeach
         </tbody>

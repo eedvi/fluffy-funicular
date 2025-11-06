@@ -75,33 +75,55 @@
 
     <!-- Loan Balance -->
     <div class="balance-box">
-        <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8pt;">Estado del Préstamo</div>
-        <div class="balance-row">
-            <span class="balance-label">Total Préstamo:</span>
-            <span class="balance-value">Q{{ number_format($payment->loan->total_amount, 2) }}</span>
+        <div style="font-weight: bold; margin-bottom: 2mm; font-size: 8pt;">Estado Actual del Préstamo</div>
+
+        <div class="balance-row" style="background-color: #f3f4f6; padding: 1mm; margin-bottom: 1mm;">
+            <span class="balance-label" style="font-weight: bold;">Capital Original:</span>
+            <span class="balance-value">Q{{ number_format($payment->loan->loan_amount, 2) }}</span>
         </div>
+
         <div class="balance-row">
-            <span class="balance-label">Total Pagado:</span>
-            <span class="balance-value" style="color: #10b981;">Q{{ number_format($payment->loan->amount_paid, 2) }}</span>
-        </div>
-        <div class="balance-row" style="border-top: 1px solid #999; padding-top: 1mm;">
-            <span class="balance-label">SALDO PENDIENTE:</span>
-            <span class="balance-value" style="color: {{ $payment->loan->balance_remaining > 0 ? '#f59e0b' : '#10b981' }}; font-weight: bold;">
-                Q{{ number_format($payment->loan->balance_remaining, 2) }}
+            <span class="balance-label">Capital Restante:</span>
+            <span class="balance-value" style="color: {{ $payment->loan->principal_remaining > 0 ? '#f59e0b' : '#10b981' }};">
+                Q{{ number_format($payment->loan->principal_remaining, 2) }}
             </span>
+        </div>
+
+        <div class="balance-row">
+            <span class="balance-label">Interés Acumulado:</span>
+            <span class="balance-value" style="color: #3b82f6;">Q{{ number_format($payment->loan->interest_amount, 2) }}</span>
+        </div>
+
+        <div class="balance-row" style="border-top: 1px solid #999; padding-top: 1mm; margin-top: 1mm;">
+            <span class="balance-label" style="font-weight: bold;">TOTAL A PAGAR:</span>
+            <span class="balance-value" style="color: {{ $payment->loan->total_amount > 0 ? '#f59e0b' : '#10b981' }}; font-weight: bold;">
+                Q{{ number_format($payment->loan->total_amount, 2) }}
+            </span>
+        </div>
+
+        <div class="balance-row" style="background-color: #e0f2fe; padding: 1mm; margin-top: 1mm; font-size: 7pt;">
+            <span class="balance-label">Total Pagado Acumulado:</span>
+            <span class="balance-value" style="color: #10b981;">Q{{ number_format($payment->loan->amount_paid, 2) }}</span>
         </div>
     </div>
 
-    @if($payment->loan->balance_remaining <= 0)
+    @if($payment->loan->principal_remaining <= 0)
     <div class="notes-box" style="background-color: #d1fae5; border-color: #10b981;">
         <div class="notes-title" style="color: #10b981;">✅ PRÉSTAMO PAGADO</div>
         <p>Este préstamo ha sido liquidado. Puede retirar su artículo presentando este comprobante.</p>
     </div>
     @else
-    <div class="notes-box">
-        <div class="notes-title">INFORMACIÓN:</div>
-        <p>Saldo pendiente: <strong>Q{{ number_format($payment->loan->balance_remaining, 2) }}</strong></p>
-        <p>Vencimiento: {{ $payment->loan->due_date->format('d/m/Y') }}</p>
+    <div class="notes-box" style="background-color: #fef3c7; border-color: #f59e0b;">
+        <div class="notes-title" style="color: #d97706;">ℹ️ INFORMACIÓN IMPORTANTE:</div>
+        <p style="margin-bottom: 2mm;"><strong>Capital restante:</strong> Q{{ number_format($payment->loan->principal_remaining, 2) }}</p>
+        <p style="margin-bottom: 2mm;"><strong>Interés actual:</strong> Q{{ number_format($payment->loan->interest_amount, 2) }} ({{ number_format($payment->loan->interest_rate, 2) }}%)</p>
+        <p style="margin-bottom: 2mm;"><strong>Total a pagar:</strong> Q{{ number_format($payment->loan->total_amount, 2) }}</p>
+        <p style="margin-bottom: 0mm;"><strong>Vencimiento:</strong> {{ $payment->loan->due_date->format('d/m/Y') }}</p>
+    </div>
+
+    <div class="notes-box" style="font-size: 6pt; background-color: #f3f4f6; border-color: #9ca3af;">
+        <div class="notes-title" style="font-size: 6.5pt;">💡 CÓMO FUNCIONA EL INTERÉS:</div>
+        <p style="margin: 0;">Los pagos se aplican <strong>primero a intereses</strong>, luego a capital. El interés se recalcula sobre el capital restante después de cada pago.</p>
     </div>
     @endif
 

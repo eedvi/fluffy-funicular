@@ -25,8 +25,8 @@
                 <th>Artículo</th>
                 <th class="text-right">Monto</th>
                 <th class="text-right">Saldo</th>
+                <th>Plan de Pago</th>
                 <th>Vencimiento</th>
-                <th>Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -37,8 +37,27 @@
                 <td>{{ $loan->item->name }}</td>
                 <td class="text-right">Q{{ number_format($loan->total_amount, 2) }}</td>
                 <td class="text-right">Q{{ number_format($loan->balance_remaining, 2) }}</td>
-                <td>{{ $loan->due_date->format('d/m/Y') }}</td>
-                <td>{{ \App\Helpers\TranslationHelper::translateLoanStatus($loan->status) }}</td>
+                <td>
+                    @if($loan->payment_plan_type === 'installments')
+                        Cuotas ({{ $loan->number_of_installments }})
+                    @elseif($loan->requires_minimum_payment)
+                        Pago Mínimo
+                    @else
+                        Tradicional
+                    @endif
+                </td>
+                <td>
+                    @if($loan->payment_plan_type === 'installments')
+                        @php
+                            $nextInstallment = $loan->installments->where('status', '!=', 'paid')->first();
+                        @endphp
+                        {{ $nextInstallment ? $nextInstallment->due_date->format('d/m/Y') : 'N/A' }}
+                    @elseif($loan->requires_minimum_payment)
+                        {{ $loan->next_minimum_payment_date ? $loan->next_minimum_payment_date->format('d/m/Y') : 'N/A' }}
+                    @else
+                        {{ $loan->due_date ? $loan->due_date->format('d/m/Y') : 'N/A' }}
+                    @endif
+                </td>
             </tr>
             @endforeach
         </tbody>

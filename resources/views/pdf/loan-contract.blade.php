@@ -146,27 +146,27 @@
             </tr>
             <tr>
                 <td>Valor Tasado:</td>
-                <td>${{ number_format($loan->item->appraised_value, 2) }}</td>
+                <td>GTQ{{ number_format($loan->item->appraised_value, 2) }}</td>
             </tr>
         </table>
 
         <div class="section-title">DETALLES DEL PRÉSTAMO</div>
         <table class="info-table">
             <tr>
-                <td>Monto del Préstamo:</td>
+                <td>Capital del Préstamo:</td>
                 <td>GTQ{{ number_format($loan->loan_amount, 2) }}</td>
             </tr>
             <tr>
                 <td>Tasa de Interés:</td>
-                <td>{{ $loan->interest_rate }}%</td>
+                <td>{{ $loan->interest_rate }}% (sobre saldo restante)</td>
             </tr>
             <tr>
-                <td>Monto de Interés:</td>
-                <td>GTQ{{ number_format($loan->interest_amount, 2) }}</td>
+                <td>Interés Inicial:</td>
+                <td>GTQ{{ number_format($loan->loan_amount * ($loan->interest_rate / 100), 2) }}</td>
             </tr>
             <tr>
-                <td>Monto Total a Pagar:</td>
-                <td><strong>GTQ{{ number_format($loan->total_amount, 2) }}</strong></td>
+                <td>Monto Total Inicial a Pagar:</td>
+                <td><strong>GTQ{{ number_format($loan->loan_amount + ($loan->loan_amount * ($loan->interest_rate / 100)), 2) }}</strong></td>
             </tr>
             <tr>
                 <td>Plazo:</td>
@@ -187,7 +187,13 @@
     <div class="terms">
         <p><strong>PRIMERA:</strong> El cliente entrega en prenda el artículo descrito anteriormente a la Casa de Empeño como garantía del préstamo otorgado.</p>
 
-        <p><strong>SEGUNDA:</strong> El cliente se compromete a pagar el monto total de ${{ number_format($loan->total_amount, 2) }} en o antes de la fecha de vencimiento {{ $loan->due_date->format('d/m/Y') }}.</p>
+        <p><strong>SEGUNDA:</strong> El cliente se compromete a pagar el monto total indicado en o antes de la fecha de vencimiento {{ $loan->due_date->format('d/m/Y') }}. El monto inicial a pagar es de GTQ{{ number_format($loan->total_amount, 2) }}, compuesto por capital de GTQ{{ number_format($loan->loan_amount, 2) }} más interés de GTQ{{ number_format($loan->interest_amount, 2) }}.</p>
+
+        <p><strong>SEGUNDA BIS (CÁLCULO DE INTERESES):</strong> El cliente comprende y acepta que el interés del {{ number_format($loan->interest_rate, 2) }}% se recalcula sobre el capital restante después de cada pago parcial. Los pagos se aplican primero a los intereses acumulados y posteriormente al capital. A medida que se reduce el capital, el interés también disminuirá proporcionalmente. El monto total a pagar puede variar dependiendo de los pagos parciales realizados.</p>
+
+        @if($loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0)
+        <p><strong>SEGUNDA TER (PAGO MÍNIMO MENSUAL):</strong> El cliente se compromete a realizar un pago mínimo mensual de GTQ{{ number_format($loan->minimum_monthly_payment, 2) }} cada 30 días, con el primer pago venciendo el {{ $loan->next_minimum_payment_date ? $loan->next_minimum_payment_date->format('d/m/Y') : 'por determinar' }}. En caso de no realizar el pago mínimo, el cliente tendrá un período de gracia de {{ $loan->grace_period_days }} días. Si transcurre el período de gracia sin realizar el pago mínimo, el préstamo será marcado como "EN RIESGO" y la Casa de Empeño podrá iniciar el proceso de confiscación del artículo. El cliente comprende que el pago mínimo mensual es OBLIGATORIO para mantener el artículo en garantía y evitar su confiscación.</p>
+        @endif
 
         <p><strong>TERCERA:</strong> En caso de no realizar el pago dentro del plazo establecido, el cliente acepta que la Casa de Empeño puede retener el artículo empeñado y proceder a su venta para recuperar el monto adeudado.</p>
 

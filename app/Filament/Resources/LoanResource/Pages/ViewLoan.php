@@ -97,30 +97,32 @@ class ViewLoan extends ViewRecord
                     ->schema([
                         Infolists\Components\Group::make([
                             Infolists\Components\TextEntry::make('loan_amount')
-                                ->label('Monto del Préstamo')
+                                ->label('Capital Original')
                                 ->money('GTQ')
                                 ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
                             Infolists\Components\TextEntry::make('interest_rate')
                                 ->label('Tasa de Interés')
                                 ->suffix('%'),
-                            Infolists\Components\TextEntry::make('interest_amount')
-                                ->label('Interés')
-                                ->money('GTQ'),
-                        ])->columns(3),
-                        Infolists\Components\Group::make([
-                            Infolists\Components\TextEntry::make('total_amount')
-                                ->label('Total a Pagar')
-                                ->money('GTQ')
-                                ->weight('bold'),
                             Infolists\Components\TextEntry::make('amount_paid')
                                 ->label('Total Pagado')
                                 ->money('GTQ')
                                 ->color('success'),
-                            Infolists\Components\TextEntry::make('balance_remaining')
-                                ->label('Saldo Pendiente')
+                        ])->columns(3),
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('principal_remaining')
+                                ->label('Capital Restante')
                                 ->money('GTQ')
                                 ->color(fn ($state) => $state > 0 ? 'warning' : 'success')
                                 ->weight('bold'),
+                            Infolists\Components\TextEntry::make('interest_amount')
+                                ->label('Interés Acumulado')
+                                ->money('GTQ')
+                                ->color('info'),
+                            Infolists\Components\TextEntry::make('total_amount')
+                                ->label('Total a Pagar')
+                                ->money('GTQ')
+                                ->weight('bold')
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
                         ])->columns(3),
                     ]),
 
@@ -139,6 +141,49 @@ class ViewLoan extends ViewRecord
                                 ->suffix(' días'),
                         ])->columns(3),
                     ]),
+
+                Infolists\Components\Section::make('Pago Mínimo Mensual')
+                    ->description('Información sobre requisitos de pago mínimo mensual')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('minimum_monthly_payment')
+                                ->label('Pago Mínimo Mensual')
+                                ->money('GTQ')
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                ->weight('bold'),
+                            Infolists\Components\TextEntry::make('next_minimum_payment_date')
+                                ->label('Próximo Pago Vence')
+                                ->date('d/m/Y')
+                                ->color(fn ($record) => $record->isMinimumPaymentOverdue() ? 'danger' : 'gray')
+                                ->badge(fn ($record) => $record->isMinimumPaymentOverdue())
+                                ->icon(fn ($record) => $record->isMinimumPaymentOverdue() ? 'heroicon-o-exclamation-triangle' : null),
+                            Infolists\Components\TextEntry::make('last_minimum_payment_date')
+                                ->label('Último Pago Mínimo')
+                                ->date('d/m/Y')
+                                ->placeholder('Sin pagos aún'),
+                        ])->columns(3),
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('is_at_risk')
+                                ->label('Estado de Riesgo')
+                                ->formatStateUsing(fn ($state) => $state ? 'En Riesgo' : 'Al Corriente')
+                                ->badge()
+                                ->color(fn ($state) => $state ? 'danger' : 'success')
+                                ->icon(fn ($state) => $state ? 'heroicon-o-shield-exclamation' : 'heroicon-o-shield-check'),
+                            Infolists\Components\TextEntry::make('grace_period_end_date')
+                                ->label('Período de Gracia Termina')
+                                ->date('d/m/Y')
+                                ->color('warning')
+                                ->badge()
+                                ->visible(fn ($record) => $record->is_at_risk && $record->grace_period_end_date),
+                            Infolists\Components\TextEntry::make('consecutive_missed_payments')
+                                ->label('Pagos Consecutivos Perdidos')
+                                ->formatStateUsing(fn ($state) => $state > 0 ? $state . ' pago(s)' : 'Ninguno')
+                                ->badge()
+                                ->color(fn ($state) => $state > 0 ? 'danger' : 'success'),
+                        ])->columns(3),
+                    ])
+                    ->visible(fn ($record) => $record->requires_minimum_payment)
+                    ->collapsible(),
 
                 Infolists\Components\Section::make('Resumen de Actividad')
                     ->schema([

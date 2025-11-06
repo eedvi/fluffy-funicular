@@ -19,3 +19,6 @@ Schedule::command('loans:calculate-overdue-interest')->dailyAt('01:00');
 
 // Schedule customer credit score calculation to run weekly on Sunday at 2 AM
 Schedule::command('customers:calculate-credit-scores')->weekly()->sundays()->at('02:00');
+
+// Schedule minimum payment check to run daily at 8 AM
+Schedule::command('loans:check-minimum-payments')->dailyAt('08:00');

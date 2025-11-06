@@ -45,13 +45,20 @@ class PaymentResource extends Resource
                                     ->dehydrated(),
                                 Forms\Components\Select::make('loan_id')
                                     ->label('Préstamo')
-                                    ->relationship('loan', 'loan_number')
+                                    ->relationship('loan', 'loan_number', function (Builder $query) {
+                                        return $query->whereIn('status', ['active', 'overdue', 'pending'])
+                                            ->where('principal_remaining', '>', 0);
+                                    })
                                     ->getOptionLabelFromRecordUsing(fn ($record) =>
-                                        "{$record->loan_number} - {$record->customer->full_name}"
+                                        "{$record->loan_number} - {$record->customer->full_name} - GTQ" .
+                                        number_format($record->total_amount, 2) .
+                                        ($record->requires_minimum_payment ? " 💰" : "")
                                     )
                                     ->searchable(['loan_number'])
                                     ->required()
-                                    ->preload(),
+                                    ->preload()
+                                    ->live()
+                                    ->helperText('💰 = Requiere pago mínimo'),
                                 Forms\Components\Select::make('branch_id')
                                     ->label('Sucursal')
                                     ->relationship('branch', 'name')
@@ -62,6 +69,49 @@ class PaymentResource extends Resource
                             ]),
                     ]),
 
+                Forms\Components\Section::make('Información de Pago Mínimo')
+                    ->description('Este préstamo requiere pagos mínimos mensuales')
+                    ->schema([
+                        Forms\Components\Placeholder::make('minimum_payment_info')
+                            ->label('')
+                            ->content(function (Forms\Get $get) {
+                                $loanId = $get('loan_id');
+                                if ($loanId) {
+                                    $loan = \App\Models\Loan::find($loanId);
+                                    if ($loan && $loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0) {
+                                        $info = "💰 Pago mínimo mensual requerido: GTQ" . number_format($loan->minimum_monthly_payment, 2);
+
+                                        if ($loan->next_minimum_payment_date) {
+                                            $info .= "\n📅 Próximo pago vence: " . $loan->next_minimum_payment_date->format('d/m/Y');
+
+                                            if ($loan->isMinimumPaymentOverdue()) {
+                                                $info .= " ⚠️ VENCIDO";
+                                            }
+                                        }
+
+                                        if ($loan->is_at_risk) {
+                                            $info .= "\n⚠️ PRÉSTAMO EN RIESGO - Período de gracia hasta: " .
+                                                    ($loan->grace_period_end_date ? $loan->grace_period_end_date->format('d/m/Y') : 'N/A');
+                                            $info .= "\n❌ Pagos consecutivos perdidos: " . $loan->consecutive_missed_payments;
+                                        }
+
+                                        return new \Illuminate\Support\HtmlString('<div style="white-space: pre-line; padding: 12px; background-color: #fef3c7; border-radius: 6px; border: 1px solid #f59e0b; color: #92400e;">' . nl2br(htmlspecialchars($info)) . '</div>');
+                                    }
+                                }
+                                return null;
+                            }),
+                    ])
+                    ->visible(function (Forms\Get $get) {
+                        $loanId = $get('loan_id');
+                        if ($loanId) {
+                            $loan = \App\Models\Loan::find($loanId);
+                            return $loan && $loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0;
+                        }
+                        return false;
+                    })
+                    ->collapsible()
+                    ->collapsed(false),
+
                 Forms\Components\Section::make('Detalles del Pago')
                     ->schema([
                         Forms\Components\Grid::make(3)
@@ -71,7 +121,16 @@ class PaymentResource extends Resource
                                     ->required()
                                     ->numeric()
                                     ->prefix('Q')
-                                    ->default(0)
+                                    ->default(function (Forms\Get $get) {
+                                        $loanId = $get('loan_id');
+                                        if ($loanId) {
+                                            $loan = \App\Models\Loan::find($loanId);
+                                            if ($loan && $loan->requires_minimum_payment) {
+                                                return $loan->minimum_monthly_payment;
+                                            }
+                                        }
+                                        return 0;
+                                    })
                                     ->minValue(0)
                                     ->rules([
                                         function (Forms\Get $get) {
@@ -79,13 +138,43 @@ class PaymentResource extends Resource
                                                 $loanId = $get('loan_id');
                                                 if ($loanId && $value) {
                                                     $loan = \App\Models\Loan::find($loanId);
-                                                    if ($loan && $value > $loan->balance_remaining) {
-                                                        $fail("El monto ($" . number_format($value, 2) . ") no puede exceder el saldo pendiente de $" . number_format($loan->balance_remaining, 2));
+                                                    if ($loan && $value > $loan->total_amount) {
+                                                        $fail("El monto (GTQ" . number_format($value, 2) . ") no puede exceder el total a pagar de GTQ" . number_format($loan->total_amount, 2) . " (Capital: GTQ" . number_format($loan->principal_remaining, 2) . " + Interés: GTQ" . number_format($loan->interest_amount, 2) . ")");
                                                     }
                                                 }
                                             };
                                         },
-                                    ]),
+                                    ])
+                                    ->helperText(function (Forms\Get $get) {
+                                        $loanId = $get('loan_id');
+                                        $amount = (float) $get('amount');
+
+                                        if ($loanId) {
+                                            $loan = \App\Models\Loan::find($loanId);
+                                            if ($loan) {
+                                                $text = "Total a pagar: GTQ" . number_format($loan->total_amount, 2) .
+                                                       " (Capital: GTQ" . number_format($loan->principal_remaining, 2) .
+                                                       " + Interés: GTQ" . number_format($loan->interest_amount, 2) . ")";
+
+                                                // Add minimum payment info and warning if applicable
+                                                if ($loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0) {
+                                                    $text .= " | Pago mínimo: GTQ" . number_format($loan->minimum_monthly_payment, 2);
+
+                                                    if ($amount > 0 && $amount < $loan->minimum_monthly_payment) {
+                                                        $text .= " ⚠️ ADVERTENCIA: El monto es menor que el pago mínimo requerido";
+                                                    }
+
+                                                    if ($loan->is_at_risk) {
+                                                        $text .= " | ⚠️ PRÉSTAMO EN RIESGO";
+                                                    }
+                                                }
+
+                                                return $text;
+                                            }
+                                        }
+                                        return null;
+                                    })
+                                    ->live(onBlur: true),
                                 Forms\Components\DatePicker::make('payment_date')
                                     ->label('Fecha de Pago')
                                     ->required()

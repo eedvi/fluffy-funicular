@@ -34,11 +34,11 @@
             @foreach($items as $item)
             <tr>
                 <td>{{ $item->name }}</td>
-                <td>{{ $item->category->name }}</td>
+                <td>{{ $item->category?->name ?? 'Sin Categoría' }}</td>
                 <td>{{ \App\Helpers\TranslationHelper::translateItemStatus($item->status) }}</td>
                 <td>{{ \App\Helpers\TranslationHelper::translateItemCondition($item->condition) }}</td>
-                <td class="text-right">${{ number_format($item->appraised_value, 2) }}</td>
-                <td class="text-right">${{ number_format($item->market_value ?? 0, 2) }}</td>
+                <td class="text-right">Q{{ number_format($item->appraised_value, 2) }}</td>
+                <td class="text-right">Q{{ number_format($item->market_value ?? 0, 2) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -46,8 +46,8 @@
 
     <div class="summary">
         <p>Total de artículos: {{ $items->count() }}</p>
-        <p>Valor total tasado: ${{ number_format($totalValue, 2) }}</p>
-        <p>Valor total de mercado: ${{ number_format($totalMarketValue, 2) }}</p>
+        <p>Valor total tasado: Q{{ number_format($totalValue, 2) }}</p>
+        <p>Valor total de mercado: Q{{ number_format($totalMarketValue, 2) }}</p>
     </div>
 
     <div class="category-summary">
@@ -61,11 +61,11 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($byCategory as $category => $data)
+                @foreach($byCategory as $categoryName => $data)
                 <tr>
-                    <td>{{ $category }}</td>
+                    <td>{{ $categoryName }}</td>
                     <td class="text-right">{{ $data['count'] }}</td>
-                    <td class="text-right">${{ number_format($data['total_value'], 2) }}</td>
+                    <td class="text-right">Q{{ number_format($data['total_value'], 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>

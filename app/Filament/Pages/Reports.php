@@ -103,13 +103,13 @@ class Reports extends Page implements HasForms
             $branchId = $formData['branch_id'];
 
             $query = Loan::where('status', 'active')
-                ->with(['customer', 'item', 'branch']);
+                ->with(['customer', 'item', 'branch', 'installments']);
 
             if ($branchId) {
                 $query->where('branch_id', $branchId);
             }
 
-            $loans = $query->orderBy('due_date', 'asc')->get();
+            $loans = $query->orderByRaw('COALESCE(due_date, start_date) ASC')->get();
 
             if ($loans->isEmpty()) {
                 \Filament\Notifications\Notification::make()
@@ -161,15 +161,41 @@ class Reports extends Page implements HasForms
             $formData = $this->form->getState();
             $branchId = $formData['branch_id'];
 
-            $query = Loan::whereIn('status', ['active', 'overdue'])
-                ->where('due_date', '<', now())
-                ->with(['customer', 'item', 'branch']);
+            $query = Loan::where(function($q) {
+                // Traditional loans with due_date
+                $q->where(function($subQ) {
+                    $subQ->whereIn('status', ['active', 'overdue'])
+                         ->whereNotNull('due_date')
+                         ->where('due_date', '<', now());
+                })
+                // Minimum payment loans that are at risk
+                ->orWhere(function($subQ) {
+                    $subQ->where('status', 'active')
+                         ->where('requires_minimum_payment', true)
+                         ->where('is_at_risk', true);
+                })
+                // Installment loans with overdue installments
+                ->orWhere(function($subQ) {
+                    $subQ->where('status', 'overdue')
+                         ->where('payment_plan_type', 'installments');
+                });
+            })
+            ->with(['customer', 'item', 'branch', 'installments' => function($q) {
+                $q->where('status', 'overdue')->orderBy('installment_number');
+            }]);
 
             if ($branchId) {
                 $query->where('branch_id', $branchId);
             }
 
-            $loans = $query->orderBy('due_date', 'asc')->get();
+            $loans = $query->orderByRaw('
+                CASE
+                    WHEN payment_plan_type = "installments" THEN 1
+                    WHEN requires_minimum_payment = 1 THEN 2
+                    ELSE 3
+                END,
+                COALESCE(due_date, start_date) ASC
+            ')->get();
 
             if ($loans->isEmpty()) {
                 \Filament\Notifications\Notification::make()
@@ -354,13 +380,13 @@ class Reports extends Page implements HasForms
             $branchId = $formData['branch_id'];
 
             $query = Item::whereIn('status', ['available', 'collateral', 'forfeited'])
-                ->with(['branch']);
+                ->with(['branch', 'category']);
 
             if ($branchId) {
                 $query->where('branch_id', $branchId);
             }
 
-            $items = $query->orderBy('category')->orderBy('name')->get();
+            $items = $query->orderBy('category_id')->orderBy('name')->get();
 
             if ($items->isEmpty()) {
                 \Filament\Notifications\Notification::make()
@@ -375,7 +401,7 @@ class Reports extends Page implements HasForms
             $totalValue = $items->sum('appraised_value');
             $totalMarketValue = $items->sum('market_value');
 
-            $byCategory = $items->groupBy('category')->map(function ($categoryItems) {
+            $byCategory = $items->groupBy(fn($item) => $item->category?->name ?? 'Sin Categoría')->map(function ($categoryItems) {
                 return [
                     'count' => $categoryItems->count(),
                     'total_value' => $categoryItems->sum('appraised_value'),

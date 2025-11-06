@@ -86,17 +86,6 @@ class LoansRelationManager extends RelationManager
                                     ->afterStateUpdated(function (Get $get, Set $set) {
                                         self::calculateLoanAmounts($get, $set);
                                     }),
-                                Forms\Components\TextInput::make('loan_term_days')
-                                    ->label('Plazo (días)')
-                                    ->required()
-                                    ->numeric()
-                                    ->default(30)
-                                    ->minValue(1)
-                                    ->suffix('días')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::calculateDueDate($get, $set);
-                                    }),
                                 Forms\Components\TextInput::make('interest_amount')
                                     ->label('Monto de Interés')
                                     ->required()
@@ -119,59 +108,143 @@ class LoansRelationManager extends RelationManager
                                     ->prefix('Q')
                                     ->disabled()
                                     ->dehydrated(false),
-                            ]),
-                    ]),
-
-                Forms\Components\Section::make('Fechas')
-                    ->schema([
-                        Forms\Components\Grid::make(3)
-                            ->schema([
-                                Forms\Components\DatePicker::make('start_date')
-                                    ->label('Fecha de Inicio')
-                                    ->required()
-                                    ->default(now())
-                                    ->displayFormat('d/m/Y')
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::calculateDueDate($get, $set);
-                                    }),
-                                Forms\Components\DatePicker::make('due_date')
-                                    ->label('Fecha de Vencimiento')
-                                    ->required()
-                                    ->displayFormat('d/m/Y')
-                                    ->disabled()
+                                Forms\Components\Hidden::make('principal_remaining')
+                                    ->default(fn (Get $get) => $get('loan_amount') ?? 0),
+                                Forms\Components\Hidden::make('loan_term_days')
+                                    ->default(null)
                                     ->dehydrated(),
-                                Forms\Components\DatePicker::make('paid_date')
-                                    ->label('Fecha de Pago')
-                                    ->displayFormat('d/m/Y'),
+                                Forms\Components\Hidden::make('due_date')
+                                    ->default(null)
+                                    ->dehydrated(),
                             ]),
                     ]),
 
-                Forms\Components\Section::make('Estado')
+                Forms\Components\Section::make('Fecha de Inicio')
                     ->schema([
-                        Forms\Components\Grid::make(2)
-                            ->schema([
-                                Forms\Components\Select::make('status')
-                                    ->label('Estado')
-                                    ->required()
-                                    ->options([
-                                        Loan::STATUS_PENDING => 'Pendiente',
-                                        Loan::STATUS_ACTIVE => 'Activo',
-                                        Loan::STATUS_PAID => 'Pagado',
-                                        Loan::STATUS_OVERDUE => 'Vencido',
-                                        Loan::STATUS_FORFEITED => 'Confiscado',
-                                    ])
-                                    ->default(Loan::STATUS_ACTIVE)
-                                    ->live()
-                                    ->native(false),
-                                Forms\Components\DatePicker::make('forfeited_date')
-                                    ->label('Fecha de Confiscación')
-                                    ->displayFormat('d/m/Y')
-                            ]),
+                        Forms\Components\DatePicker::make('start_date')
+                            ->label('Fecha de Inicio del Préstamo')
+                            ->required()
+                            ->default(now())
+                            ->displayFormat('d/m/Y')
+                            ->helperText('El préstamo no tiene fecha de vencimiento. El cliente paga mensualmente hasta liquidar.'),
+                    ]),
+
+                Forms\Components\Section::make('Estado y Notas')
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->label('Estado')
+                            ->required()
+                            ->options([
+                                Loan::STATUS_PENDING => 'Pendiente',
+                                Loan::STATUS_ACTIVE => 'Activo',
+                                Loan::STATUS_PAID => 'Pagado',
+                                Loan::STATUS_OVERDUE => 'Vencido',
+                                Loan::STATUS_FORFEITED => 'Confiscado',
+                            ])
+                            ->default(Loan::STATUS_ACTIVE)
+                            ->live()
+                            ->native(false)
+                            ->helperText('Las fechas de pago y confiscación se registran automáticamente'),
                         Forms\Components\Textarea::make('notes')
                             ->label('Notas')
                             ->rows(3)
                             ->columnSpanFull(),
+                    ]),
+
+                Forms\Components\Section::make('Plan de Pago')
+                    ->description('Elija el tipo de plan de pago para este préstamo.')
+                    ->schema([
+                        Forms\Components\Select::make('payment_plan_type')
+                            ->label('Tipo de Plan')
+                            ->required()
+                            ->options([
+                                'minimum_payment' => 'Pago Mínimo Mensual',
+                                'installments' => 'Cuotas Fijas',
+                            ])
+                            ->default('minimum_payment')
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                self::calculateLoanAmounts($get, $set);
+                            })
+                            ->helperText('Pago Mínimo: el cliente paga mensualmente los intereses. Cuotas: se divide el préstamo en cuotas iguales.'),
+
+                        // Sección de Pago Mínimo Mensual
+                        Forms\Components\Section::make('Configuración de Pago Mínimo')
+                            ->description('El cliente debe pagar mensualmente los intereses generados hasta liquidar la deuda.')
+                            ->schema([
+                                Forms\Components\Hidden::make('requires_minimum_payment')
+                                    ->default(true)
+                                    ->dehydrated(),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('minimum_monthly_payment')
+                                            ->label('Pago Mínimo Mensual (Auto-calculado)')
+                                            ->numeric()
+                                            ->prefix('Q')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->helperText('Se calcula automáticamente como: Capital × Tasa de Interés'),
+                                        Forms\Components\TextInput::make('grace_period_days')
+                                            ->label('Días de Gracia')
+                                            ->required()
+                                            ->numeric()
+                                            ->default(5)
+                                            ->minValue(0)
+                                            ->maxValue(30)
+                                            ->suffix('días')
+                                            ->helperText('Días de tolerancia después de vencer el pago mensual'),
+                                    ]),
+                            ])
+                            ->visible(fn (Get $get) => $get('payment_plan_type') === 'minimum_payment'),
+
+                        // Sección de Cuotas
+                        Forms\Components\Section::make('Configuración de Cuotas')
+                            ->description('El préstamo se divide en cuotas iguales con amortización (capital + interés).')
+                            ->schema([
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('number_of_installments')
+                                            ->label('Número de Cuotas')
+                                            ->required()
+                                            ->numeric()
+                                            ->default(12)
+                                            ->minValue(1)
+                                            ->maxValue(60)
+                                            ->suffix('cuotas')
+                                            ->live(onBlur: true)
+                                            ->afterStateUpdated(function (Get $get, Set $set) {
+                                                self::calculateInstallmentAmount($get, $set);
+                                            })
+                                            ->helperText('Total de cuotas en las que se dividirá el préstamo'),
+                                        Forms\Components\TextInput::make('installment_frequency_days')
+                                            ->label('Frecuencia de Pago')
+                                            ->required()
+                                            ->numeric()
+                                            ->default(30)
+                                            ->minValue(1)
+                                            ->maxValue(90)
+                                            ->suffix('días')
+                                            ->helperText('Días entre cada cuota (30 = mensual)'),
+                                        Forms\Components\TextInput::make('installment_amount')
+                                            ->label('Monto de Cuota (Auto-calculado)')
+                                            ->numeric()
+                                            ->prefix('Q')
+                                            ->disabled()
+                                            ->dehydrated()
+                                            ->helperText('Calculado usando sistema de amortización francesa'),
+                                        Forms\Components\TextInput::make('late_fee_percentage')
+                                            ->label('Porcentaje de Mora')
+                                            ->required()
+                                            ->numeric()
+                                            ->default(5.00)
+                                            ->minValue(0)
+                                            ->maxValue(100)
+                                            ->suffix('%')
+                                            ->helperText('Mora aplicada sobre el saldo pendiente por cuota vencida'),
+                                    ]),
+                            ])
+                            ->visible(fn (Get $get) => $get('payment_plan_type') === 'installments'),
                     ]),
             ]);
     }
@@ -186,18 +259,47 @@ class LoansRelationManager extends RelationManager
         $set('interest_amount', $amounts['interest_amount']);
         $set('total_amount', $amounts['total_amount']);
         $set('balance_remaining', $amounts['balance_remaining']);
-    }
+        // Initialize principal_remaining with full loan amount
+        $set('principal_remaining', $loanAmount);
 
-    protected static function calculateDueDate(Get $get, Set $set): void
-    {
-        $startDate = $get('start_date');
-        $loanTermDays = (int) $get('loan_term_days') ?: 30;
+        // SIEMPRE calcular el pago mínimo mensual (son los intereses)
+        $minimumPayment = round($loanAmount * ($interestRate / 100), 2);
+        $set('minimum_monthly_payment', $minimumPayment);
 
-        if ($startDate) {
-            $dueDate = Loan::calculateDueDate($startDate, $loanTermDays);
-            $set('due_date', $dueDate);
+        // Si es plan de cuotas, calcular el monto de cuota
+        if ($get('payment_plan_type') === 'installments') {
+            self::calculateInstallmentAmount($get, $set);
         }
     }
+
+    protected static function calculateInstallmentAmount(Get $get, Set $set): void
+    {
+        $loanAmount = (float) $get('loan_amount') ?: 0;
+        $interestRate = (float) $get('interest_rate') ?: 0;
+        $numberOfInstallments = (int) $get('number_of_installments') ?: 12;
+
+        if ($loanAmount <= 0 || $numberOfInstallments <= 0) {
+            $set('installment_amount', 0);
+            return;
+        }
+
+        // Tasa mensual (asumiendo que interest_rate es anual)
+        $monthlyRate = ($interestRate / 100) / 12;
+
+        // Calcular cuota usando fórmula de amortización francesa
+        // PMT = P * [r(1 + r)^n] / [(1 + r)^n - 1]
+        if ($monthlyRate > 0) {
+            $installmentAmount = $loanAmount *
+                ($monthlyRate * pow(1 + $monthlyRate, $numberOfInstallments)) /
+                (pow(1 + $monthlyRate, $numberOfInstallments) - 1);
+        } else {
+            // Si no hay interés, simplemente dividir el principal
+            $installmentAmount = $loanAmount / $numberOfInstallments;
+        }
+
+        $set('installment_amount', round($installmentAmount, 2));
+    }
+
 
     public function table(Table $table): Table
     {
@@ -242,6 +344,18 @@ class LoansRelationManager extends RelationManager
                         Loan::STATUS_FORFEITED => 'danger',
                         default => 'gray',
                     }),
+                Tables\Columns\IconColumn::make('is_at_risk')
+                    ->label('Riesgo')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-shield-exclamation')
+                    ->falseIcon('heroicon-o-shield-check')
+                    ->trueColor('danger')
+                    ->falseColor('success')
+                    ->tooltip(fn ($record) => $record->is_at_risk ?
+                        'Pago mínimo vencido - Gracia hasta: ' . ($record->grace_period_end_date?->format('d/m/Y') ?? 'N/A') :
+                        'Al corriente con pagos mínimos')
+                    ->visible(fn ($record) => $record->requires_minimum_payment ?? false)
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('due_date')
                     ->label('Vencimiento')
                     ->date('d/m/Y')
@@ -265,19 +379,6 @@ class LoansRelationManager extends RelationManager
                     ->color('info')
                     ->url(fn ($record): string => \App\Filament\Resources\LoanResource::getUrl('view', ['record' => $record->id]))
                     ->openUrlInNewTab(),
-                Tables\Actions\Action::make('registrar_pago')
-                    ->label('Pago')
-                    ->icon('heroicon-o-currency-dollar')
-                    ->color('success')
-                    ->visible(fn (Loan $record): bool =>
-                        in_array($record->status, [Loan::STATUS_ACTIVE, Loan::STATUS_OVERDUE, Loan::STATUS_PENDING])
-                        && $record->balance_remaining > 0
-                    )
-                    ->url(fn (Loan $record): string =>
-                        \App\Filament\Resources\PaymentResource::getUrl('create', [
-                            'loan_id' => $record->id,
-                        ])
-                    ),
             ])
             ->bulkActions([
                 //
@@ -379,6 +480,49 @@ class LoansRelationManager extends RelationManager
                                 ->suffix(' días'),
                         ])->columns(3),
                     ]),
+
+                Infolists\Components\Section::make('Pago Mínimo Mensual')
+                    ->description('Información sobre requisitos de pago mínimo mensual')
+                    ->schema([
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('minimum_monthly_payment')
+                                ->label('Pago Mínimo Mensual')
+                                ->money('GTQ')
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                ->weight('bold'),
+                            Infolists\Components\TextEntry::make('next_minimum_payment_date')
+                                ->label('Próximo Pago Vence')
+                                ->date('d/m/Y')
+                                ->color(fn ($record) => $record->isMinimumPaymentOverdue() ? 'danger' : 'gray')
+                                ->badge(fn ($record) => $record->isMinimumPaymentOverdue())
+                                ->icon(fn ($record) => $record->isMinimumPaymentOverdue() ? 'heroicon-o-exclamation-triangle' : null),
+                            Infolists\Components\TextEntry::make('last_minimum_payment_date')
+                                ->label('Último Pago Mínimo')
+                                ->date('d/m/Y')
+                                ->placeholder('Sin pagos aún'),
+                        ])->columns(3),
+                        Infolists\Components\Group::make([
+                            Infolists\Components\TextEntry::make('is_at_risk')
+                                ->label('Estado de Riesgo')
+                                ->formatStateUsing(fn ($state) => $state ? 'En Riesgo' : 'Al Corriente')
+                                ->badge()
+                                ->color(fn ($state) => $state ? 'danger' : 'success')
+                                ->icon(fn ($state) => $state ? 'heroicon-o-shield-exclamation' : 'heroicon-o-shield-check'),
+                            Infolists\Components\TextEntry::make('grace_period_end_date')
+                                ->label('Período de Gracia Termina')
+                                ->date('d/m/Y')
+                                ->color('warning')
+                                ->badge()
+                                ->visible(fn ($record) => $record->is_at_risk && $record->grace_period_end_date),
+                            Infolists\Components\TextEntry::make('consecutive_missed_payments')
+                                ->label('Pagos Consecutivos Perdidos')
+                                ->formatStateUsing(fn ($state) => $state > 0 ? $state . ' pago(s)' : 'Ninguno')
+                                ->badge()
+                                ->color(fn ($state) => $state > 0 ? 'danger' : 'success'),
+                        ])->columns(3),
+                    ])
+                    ->visible(fn ($record) => $record->requires_minimum_payment)
+                    ->collapsible(),
 
                 Infolists\Components\Section::make('Resumen de Actividad')
                     ->schema([

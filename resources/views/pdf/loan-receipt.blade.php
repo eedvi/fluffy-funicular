@@ -96,20 +96,66 @@
     </div>
 
     <!-- Financial Summary -->
+    @php
+        // Calculate initial amounts (original agreement values)
+        $interesInicial = $loan->loan_amount * ($loan->interest_rate / 100);
+        $totalInicial = $loan->loan_amount + $interesInicial;
+    @endphp
     <div class="totals-box">
         <div class="total-row">
-            <span class="total-label">Monto del Préstamo:</span>
+            <span class="total-label">Capital del Préstamo:</span>
             <span class="total-value">GTQ{{ number_format($loan->loan_amount, 2) }}</span>
         </div>
         <div class="total-row">
-            <span class="total-label">Interés ({{ number_format($loan->interest_rate, 2) }}%):</span>
-            <span class="total-value">GTQ{{ number_format($loan->interest_amount, 2) }}</span>
+            <span class="total-label">Interés Inicial ({{ number_format($loan->interest_rate, 2) }}%):</span>
+            <span class="total-value">GTQ{{ number_format($interesInicial, 2) }}</span>
         </div>
         <div class="total-row grand-total">
-            <span class="total-label">TOTAL A PAGAR:</span>
-            <span class="total-value">GTQ{{ number_format($loan->total_amount, 2) }}</span>
+            <span class="total-label">TOTAL INICIAL A PAGAR:</span>
+            <span class="total-value">GTQ{{ number_format($totalInicial, 2) }}</span>
         </div>
     </div>
+
+    <!-- Important Interest Note -->
+    <div class="notes-section" style="background-color: #fef3c7; border-color: #f59e0b;">
+        <div class="notes-title" style="color: #d97706;">⚠️ IMPORTANTE - CÁLCULO DE INTERESES:</div>
+        <div class="notes-content">
+            <p style="margin-bottom: 8px;">
+                <strong>El interés se recalcula sobre el saldo restante después de cada pago.</strong>
+            </p>
+            <p style="margin-bottom: 8px;">
+                • Los pagos se aplican <strong>primero a los intereses acumulados</strong>, luego al capital.<br>
+                • El interés del {{ number_format($loan->interest_rate, 2) }}% se calcula sobre el <strong>capital restante</strong> después de cada abono.<br>
+                • A medida que pague capital, el interés disminuirá proporcionalmente.
+            </p>
+            <p style="margin-bottom: 0px;">
+                <strong>Ejemplo:</strong> Si paga GTQ{{ number_format($loan->loan_amount * 0.5, 2) }}, cubrirá los intereses y reducirá el capital.
+                El nuevo interés se calculará solo sobre el capital restante.
+            </p>
+        </div>
+    </div>
+
+    <!-- Minimum Payment Requirements -->
+    @if($loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0)
+    <div class="notes-section" style="background-color: #dbeafe; border-color: #3b82f6;">
+        <div class="notes-title" style="color: #1e40af;">💰 REQUISITO DE PAGO MÍNIMO MENSUAL:</div>
+        <div class="notes-content">
+            <p style="margin-bottom: 8px;">
+                <strong>Este préstamo requiere un pago mínimo mensual de GTQ{{ number_format($loan->minimum_monthly_payment, 2) }}</strong>
+            </p>
+            <p style="margin-bottom: 8px;">
+                • El pago mínimo debe realizarse <strong>cada 30 días</strong> para mantener el préstamo activo.<br>
+                • Próximo pago mínimo vence el: <strong>{{ $loan->next_minimum_payment_date ? $loan->next_minimum_payment_date->format('d/m/Y') : 'Por determinar' }}</strong><br>
+                • Si no realiza el pago mínimo, tendrá un período de gracia de <strong>{{ $loan->grace_period_days }} días</strong>.<br>
+                • Después del período de gracia, el préstamo será marcado como <strong>EN RIESGO</strong>.
+            </p>
+            <p style="margin-bottom: 0px;">
+                <strong>IMPORTANTE:</strong> El pago mínimo mensual es obligatorio para evitar que el artículo
+                sea confiscado. Puede pagar más del mínimo en cualquier momento para reducir su deuda más rápido.
+            </p>
+        </div>
+    </div>
+    @endif
 
     <!-- Important Notes -->
     <div class="notes-section">

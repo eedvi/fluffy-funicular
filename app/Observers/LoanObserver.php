@@ -21,9 +21,33 @@ class LoanObserver
             $loan->amount_paid = 0;
         }
 
-        // Set balance_remaining to total_amount if not set
-        if (!isset($loan->balance_remaining) && isset($loan->total_amount)) {
-            $loan->balance_remaining = $loan->total_amount;
+        // Initialize principal_remaining with loan_amount (full capital at start)
+        if (!isset($loan->principal_remaining) && isset($loan->loan_amount)) {
+            $loan->principal_remaining = $loan->loan_amount;
+        }
+
+        // Set balance_remaining to loan_amount if not set (for backward compatibility)
+        if (!isset($loan->balance_remaining) && isset($loan->loan_amount)) {
+            $loan->balance_remaining = $loan->loan_amount;
+        }
+
+        // Initialize minimum payment fields if minimum payment is required
+        if ($loan->requires_minimum_payment && $loan->minimum_monthly_payment > 0) {
+            // Set next minimum payment date to 30 days from start date
+            if (!isset($loan->next_minimum_payment_date) && isset($loan->start_date)) {
+                $loan->next_minimum_payment_date = \Carbon\Carbon::parse($loan->start_date)->addDays(30);
+            }
+
+            // Initialize risk tracking fields
+            if (!isset($loan->is_at_risk)) {
+                $loan->is_at_risk = false;
+            }
+            if (!isset($loan->consecutive_missed_payments)) {
+                $loan->consecutive_missed_payments = 0;
+            }
+            if (!isset($loan->grace_period_days)) {
+                $loan->grace_period_days = 5; // Default grace period
+            }
         }
     }
 
@@ -35,6 +59,11 @@ class LoanObserver
         // Update item status to "collateral"
         if ($loan->item && $loan->status === 'active') {
             $loan->item->update(['status' => 'collateral']);
+        }
+
+        // Generate installments if it's an installment plan
+        if ($loan->isInstallmentPlan()) {
+            $loan->createInstallments();
         }
     }
 

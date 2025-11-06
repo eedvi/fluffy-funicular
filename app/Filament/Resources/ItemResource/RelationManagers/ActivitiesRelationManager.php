@@ -34,13 +34,25 @@ class ActivitiesRelationManager extends RelationManager
                     ->formatStateUsing(function ($state) {
                         if (!$state) return '-';
 
+                        // Decode JSON string if needed
+                        if (is_string($state)) {
+                            $state = json_decode($state, true);
+                        }
+
+                        if (!is_array($state)) {
+                            return '-';
+                        }
+
                         $changes = [];
                         if (isset($state['old']) && isset($state['attributes'])) {
-                            foreach ($state['attributes'] as $key => $new) {
-                                if (isset($state['old'][$key])) {
-                                    $old = $state['old'][$key];
-                                    if ($old != $new) {
-                                        $changes[] = "{$key}: {$old} → {$new}";
+                            $old = is_array($state['old']) ? $state['old'] : [];
+                            $attributes = is_array($state['attributes']) ? $state['attributes'] : [];
+
+                            foreach ($attributes as $key => $new) {
+                                if (isset($old[$key])) {
+                                    $oldValue = $old[$key];
+                                    if ($oldValue != $new) {
+                                        $changes[] = "{$key}: {$oldValue} → {$new}";
                                     }
                                 }
                             }
@@ -133,6 +145,15 @@ class ActivitiesRelationManager extends RelationManager
                             ->formatStateUsing(function ($state) {
                                 if (!$state) return 'Sin valores anteriores (registro nuevo)';
 
+                                // Ensure $state is an array (decode JSON string if needed)
+                                if (is_string($state)) {
+                                    $state = json_decode($state, true) ?? [];
+                                }
+
+                                if (!is_array($state)) {
+                                    return 'Formato de datos inválido';
+                                }
+
                                 $formatted = [];
                                 foreach ($state as $key => $value) {
                                     $formatted[] = "**{$key}:** " . json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -152,6 +173,15 @@ class ActivitiesRelationManager extends RelationManager
                             ->formatStateUsing(function ($state) {
                                 if (!$state) return 'Sin valores nuevos';
 
+                                // Ensure $state is an array (decode JSON string if needed)
+                                if (is_string($state)) {
+                                    $state = json_decode($state, true) ?? [];
+                                }
+
+                                if (!is_array($state)) {
+                                    return 'Formato de datos inválido';
+                                }
+
                                 $formatted = [];
                                 foreach ($state as $key => $value) {
                                     $formatted[] = "**{$key}:** " . json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -170,16 +200,30 @@ class ActivitiesRelationManager extends RelationManager
                             ->label('')
                             ->state(function ($record) {
                                 $properties = $record->properties;
-                                if (!$properties || !isset($properties['old']) || !isset($properties['attributes'])) {
+
+                                // Decode JSON string if needed
+                                if (is_string($properties)) {
+                                    $properties = json_decode($properties, true);
+                                }
+
+                                if (!$properties || !is_array($properties)) {
+                                    return 'Sin información de cambios disponible';
+                                }
+
+                                if (!isset($properties['old']) || !isset($properties['attributes'])) {
                                     return 'Creación inicial del registro';
                                 }
 
+                                // Ensure old and attributes are arrays
+                                $old = is_array($properties['old']) ? $properties['old'] : [];
+                                $attributes = is_array($properties['attributes']) ? $properties['attributes'] : [];
+
                                 $changes = [];
-                                foreach ($properties['attributes'] as $key => $new) {
-                                    if (isset($properties['old'][$key])) {
-                                        $old = $properties['old'][$key];
-                                        if ($old != $new) {
-                                            $changes[] = "• **{$key}**: `{$old}` → `{$new}`";
+                                foreach ($attributes as $key => $new) {
+                                    if (isset($old[$key])) {
+                                        $oldValue = $old[$key];
+                                        if ($oldValue != $new) {
+                                            $changes[] = "• **{$key}**: `{$oldValue}` → `{$new}`";
                                         }
                                     } else {
                                         $changes[] = "• **{$key}**: (nuevo) → `{$new}`";
