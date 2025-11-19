@@ -7,6 +7,7 @@ use App\Filament\Resources\LoanResource\RelationManagers;
 use App\Models\Loan;
 use App\Models\Payment;
 use Filament\Forms;
+use Filament\Forms\Components\Wizard;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
@@ -35,235 +36,355 @@ class LoanResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Información del Préstamo')
-                    ->schema([
-                        Forms\Components\Grid::make(3)
-                            ->schema([
-                                Forms\Components\TextInput::make('loan_number')
-                                    ->label('Número de Préstamo')
-                                    ->required()
-                                    ->default(fn () => Loan::generateLoanNumber())
-                                    ->maxLength(50)
-                                    ->unique(ignoreRecord: true)
-                                    ->disabled()
-                                    ->dehydrated(),
-                                Forms\Components\Select::make('customer_id')
-                                    ->label('Cliente')
-                                    ->relationship('customer', 'first_name')
-                                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
-                                    ->searchable(['first_name', 'last_name'])
-                                    ->required()
-                                    ->preload(),
-                                Forms\Components\Select::make('item_id')
-                                    ->label('Artículo')
-                                    ->relationship('item', 'name', function (Builder $query) {
-                                        return $query->where('status', 'available')
-                                            ->with(['branch', 'category']);
-                                    })
-                                    ->getOptionLabelFromRecordUsing(function ($record) {
-                                        return $record->name . ' - ' .
-                                               ($record->category?->name ?? 'Sin categoría') .
-                                               ' ($' . number_format($record->appraised_value, 2) . ')';
-                                    })
-                                    ->searchable(['name', 'description'])
-                                    ->required()
-                                    ->preload()
-                                    ->helperText('Solo se muestran artículos disponibles'),
-                                Forms\Components\Select::make('branch_id')
-                                    ->label('Sucursal')
-                                    ->relationship('branch', 'name')
-                                    ->preload()
-                                    ->required()
-                                    ->searchable()
-                                    ->helperText('Sucursal donde se registra el préstamo'),
-                            ]),
-                    ]),
+                Wizard::make([
+                    Wizard\Step::make('Información Básica')
+                        ->icon('heroicon-o-document-text')
+                        ->description('Seleccione el cliente, artículo y sucursal')
+                        ->schema([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('loan_number')
+                                        ->label('Número de Préstamo')
+                                        ->required()
+                                        ->default(fn () => Loan::generateLoanNumber())
+                                        ->maxLength(50)
+                                        ->unique(ignoreRecord: true)
+                                        ->disabled()
+                                        ->dehydrated(),
+                                    Forms\Components\DatePicker::make('start_date')
+                                        ->label('Fecha de Inicio')
+                                        ->required()
+                                        ->default(now())
+                                        ->displayFormat('d/m/Y')
+                                        ->helperText('Fecha en que se otorga el préstamo'),
+                                    Forms\Components\Select::make('customer_id')
+                                        ->label('Cliente')
+                                        ->relationship('customer', 'first_name')
+                                        ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_name)
+                                        ->searchable(['first_name', 'last_name'])
+                                        ->required()
+                                        ->preload()
+                                        ->live()
+                                        ->afterStateUpdated(fn (Set $set) => $set('item_id', null))
+                                        ->columnSpanFull(),
+                                    Forms\Components\Select::make('item_id')
+                                        ->label('Artículo en Garantía')
+                                        ->options(function (Get $get) {
+                                            $customerId = $get('customer_id');
+                                            if (!$customerId) {
+                                                return [];
+                                            }
+                                            return \App\Models\Item::where('status', 'available')
+                                                ->where('customer_id', $customerId)
+                                                ->with(['category'])
+                                                ->get()
+                                                ->mapWithKeys(function ($item) {
+                                                    return [$item->id => $item->name . ' - ' .
+                                                           ($item->category?->name ?? 'Sin categoría') .
+                                                           ' (Q' . number_format($item->appraised_value, 2) . ')'];
+                                                });
+                                        })
+                                        ->searchable()
+                                        ->required()
+                                        ->helperText(fn (Get $get) => $get('customer_id')
+                                            ? 'Solo se muestran artículos disponibles del cliente seleccionado'
+                                            : 'Primero seleccione un cliente')
+                                        ->disabled(fn (Get $get) => !$get('customer_id'))
+                                        ->columnSpanFull(),
+                                    Forms\Components\Select::make('branch_id')
+                                        ->label('Sucursal')
+                                        ->relationship('branch', 'name')
+                                        ->preload()
+                                        ->required()
+                                        ->searchable()
+                                        ->helperText('Sucursal donde se registra el préstamo')
+                                        ->columnSpanFull(),
+                                ]),
+                        ])
+                        ->columns(2),
 
-                Forms\Components\Section::make('Montos')
-                    ->schema([
-                        Forms\Components\Grid::make(3)
-                            ->schema([
-                                Forms\Components\TextInput::make('loan_amount')
-                                    ->label('Monto del Préstamo')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('Q')
-                                    ->default(0)
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::calculateLoanAmounts($get, $set);
-                                    }),
-                                Forms\Components\TextInput::make('interest_rate')
-                                    ->label('Tasa de Interés (%)')
-                                    ->required()
-                                    ->numeric()
-                                    ->suffix('%')
-                                    ->default(10)
-                                    ->minValue(0)
-                                    ->maxValue(100)
-                                    ->live(onBlur: true)
-                                    ->afterStateUpdated(function (Get $get, Set $set) {
-                                        self::calculateLoanAmounts($get, $set);
-                                    }),
-                                Forms\Components\TextInput::make('interest_amount')
-                                    ->label('Monto de Interés')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('Q')
-                                    ->default(0)
-                                    ->disabled()
-                                    ->dehydrated(),
-                                Forms\Components\TextInput::make('total_amount')
-                                    ->label('Monto Total')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('Q')
-                                    ->default(0)
-                                    ->disabled()
-                                    ->dehydrated(),
-                                Forms\Components\TextInput::make('balance_remaining')
-                                    ->label('Saldo Pendiente')
-                                    ->numeric()
-                                    ->prefix('Q')
-                                    ->disabled()
-                                    ->dehydrated(),
-                                Forms\Components\Hidden::make('principal_remaining')
-                                    ->default(fn (Get $get) => $get('loan_amount') ?? 0),
-                                Forms\Components\Hidden::make('loan_term_days')
-                                    ->default(null)
-                                    ->dehydrated(),
-                                Forms\Components\Hidden::make('due_date')
-                                    ->default(null)
-                                    ->dehydrated(),
-                            ]),
-                    ]),
+                    Wizard\Step::make('Montos del Préstamo')
+                        ->icon('heroicon-o-currency-dollar')
+                        ->description('Configure el capital y la tasa de interés')
+                        ->schema([
+                            Forms\Components\Grid::make(2)
+                                ->schema([
+                                    Forms\Components\TextInput::make('loan_amount')
+                                        ->label('Capital del Préstamo')
+                                        ->required()
+                                        ->numeric()
+                                        ->prefix('Q')
+                                        ->default(0)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set) {
+                                            self::calculateLoanAmounts($get, $set);
+                                        })
+                                        ->helperText('Monto principal que se otorga al cliente'),
+                                    Forms\Components\TextInput::make('interest_rate')
+                                        ->label('Tasa de Interés Mensual (%)')
+                                        ->required()
+                                        ->numeric()
+                                        ->suffix('%')
+                                        ->default(10)
+                                        ->minValue(0)
+                                        ->maxValue(100)
+                                        ->live(onBlur: true)
+                                        ->afterStateUpdated(function (Get $get, Set $set) {
+                                            self::calculateLoanAmounts($get, $set);
+                                        }),
+                                ]),
+                            Forms\Components\Section::make('Cálculos Automáticos')
+                                ->description('Estos valores se calculan automáticamente')
+                                ->schema([
+                                    Forms\Components\Grid::make(3)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('interest_amount')
+                                                ->label('Interés Mensual')
+                                                ->required()
+                                                ->numeric()
+                                                ->prefix('Q')
+                                                ->default(0)
+                                                ->disabled()
+                                                ->dehydrated(),
+                                            Forms\Components\TextInput::make('total_amount')
+                                                ->label('Total Préstamo + Interés')
+                                                ->required()
+                                                ->numeric()
+                                                ->prefix('Q')
+                                                ->default(0)
+                                                ->disabled()
+                                                ->dehydrated(),
+                                            Forms\Components\TextInput::make('balance_remaining')
+                                                ->label('Saldo Pendiente Inicial')
+                                                ->numeric()
+                                                ->prefix('Q')
+                                                ->disabled()
+                                                ->dehydrated(),
+                                        ]),
+                                ])
+                                ->collapsible(),
+                            Forms\Components\Hidden::make('principal_remaining')
+                                ->default(fn (Get $get) => $get('loan_amount') ?? 0),
+                            Forms\Components\Hidden::make('loan_term_days')
+                                ->default(null)
+                                ->dehydrated(),
+                            Forms\Components\Hidden::make('due_date')
+                                ->default(null)
+                                ->dehydrated(),
+                        ]),
 
-                Forms\Components\Section::make('Fecha de Inicio')
-                    ->schema([
-                        Forms\Components\DatePicker::make('start_date')
-                            ->label('Fecha de Inicio del Préstamo')
-                            ->required()
-                            ->default(now())
-                            ->displayFormat('d/m/Y')
-                            ->helperText('El préstamo no tiene fecha de vencimiento. El cliente paga mensualmente hasta liquidar.'),
-                    ]),
+                    Wizard\Step::make('Plan de Pago')
+                        ->icon('heroicon-o-calendar')
+                        ->description('Elija cómo el cliente pagará el préstamo')
+                        ->schema([
+                            Forms\Components\Select::make('payment_plan_type')
+                                ->label('Tipo de Plan de Pago')
+                                ->required()
+                                ->options([
+                                    'minimum_payment' => 'Pago Mínimo Mensual',
+                                    'installments' => 'Cuotas Fijas',
+                                ])
+                                ->default('minimum_payment')
+                                ->native(false)
+                                ->live()
+                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                    self::calculateLoanAmounts($get, $set);
+                                })
+                                ->helperText('Pago Mínimo: el cliente paga mensualmente los intereses. Cuotas: se divide el préstamo en cuotas iguales.'),
+                        ]),
 
-                Forms\Components\Section::make('Estado y Notas')
-                    ->schema([
-                        Forms\Components\Select::make('status')
-                            ->label('Estado')
-                            ->required()
-                            ->options([
-                                Loan::STATUS_PENDING => 'Pendiente',
-                                Loan::STATUS_ACTIVE => 'Activo',
-                                Loan::STATUS_PAID => 'Pagado',
-                                Loan::STATUS_OVERDUE => 'Vencido',
-                                Loan::STATUS_FORFEITED => 'Confiscado',
-                            ])
-                            ->default(Loan::STATUS_ACTIVE)
-                            ->native(false)
-                            ->helperText('Las fechas de pago y confiscación se registran automáticamente'),
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notas')
-                            ->rows(3)
-                            ->columnSpanFull(),
-                    ]),
+                    Wizard\Step::make('Configuración del Plan')
+                        ->icon('heroicon-o-cog')
+                        ->description('Configure los detalles del plan seleccionado')
+                        ->schema([
+                            // Configuración de Pago Mínimo
+                            Forms\Components\Section::make('Configuración de Pago Mínimo Mensual')
+                                ->description('El cliente debe pagar mensualmente los intereses generados. El capital se puede liquidar en cualquier momento.')
+                                ->icon('heroicon-o-banknotes')
+                                ->schema([
+                                    Forms\Components\Hidden::make('requires_minimum_payment')
+                                        ->default(true)
+                                        ->dehydrated(),
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('minimum_monthly_payment')
+                                                ->label('Pago Mínimo Mensual (Auto-calculado)')
+                                                ->numeric()
+                                                ->prefix('Q')
+                                                ->disabled()
+                                                ->dehydrated()
+                                                ->helperText('Cálculo: Capital × Tasa de Interés')
+                                                ->columnSpanFull(),
+                                            Forms\Components\TextInput::make('grace_period_days')
+                                                ->label('Días de Gracia')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(5)
+                                                ->minValue(0)
+                                                ->maxValue(30)
+                                                ->suffix('días')
+                                                ->helperText('Días de tolerancia después del vencimiento del pago mensual'),
+                                        ]),
+                                ])
+                                ->visible(fn (Get $get) => $get('payment_plan_type') === 'minimum_payment'),
 
-                Forms\Components\Section::make('Plan de Pago')
-                    ->description('Elija el tipo de plan de pago para este préstamo.')
-                    ->schema([
-                        Forms\Components\Select::make('payment_plan_type')
-                            ->label('Tipo de Plan')
-                            ->required()
-                            ->options([
-                                'minimum_payment' => 'Pago Mínimo Mensual',
-                                'installments' => 'Cuotas Fijas',
-                            ])
-                            ->default('minimum_payment')
-                            ->native(false)
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                self::calculateLoanAmounts($get, $set);
-                            })
-                            ->helperText('Pago Mínimo: el cliente paga mensualmente los intereses. Cuotas: se divide el préstamo en cuotas iguales.'),
+                            // Configuración de Cuotas
+                            Forms\Components\Section::make('Configuración de Cuotas Fijas')
+                                ->description('El préstamo se divide en cuotas iguales usando el sistema de amortización francesa (capital + interés).')
+                                ->icon('heroicon-o-calculator')
+                                ->schema([
+                                    Forms\Components\Grid::make(2)
+                                        ->schema([
+                                            Forms\Components\TextInput::make('number_of_installments')
+                                                ->label('Número de Cuotas')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(12)
+                                                ->minValue(1)
+                                                ->maxValue(60)
+                                                ->suffix('cuotas')
+                                                ->live(onBlur: true)
+                                                ->afterStateUpdated(function (Get $get, Set $set) {
+                                                    self::calculateInstallmentAmount($get, $set);
+                                                })
+                                                ->helperText('Total de cuotas para pagar el préstamo'),
+                                            Forms\Components\TextInput::make('installment_frequency_days')
+                                                ->label('Frecuencia de Pago')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(30)
+                                                ->minValue(1)
+                                                ->maxValue(90)
+                                                ->suffix('días')
+                                                ->helperText('Días entre cada cuota (30 = mensual, 15 = quincenal)'),
+                                            Forms\Components\TextInput::make('installment_amount')
+                                                ->label('Monto de Cada Cuota (Auto-calculado)')
+                                                ->numeric()
+                                                ->prefix('Q')
+                                                ->disabled()
+                                                ->dehydrated()
+                                                ->helperText('Calculado con sistema de amortización francesa')
+                                                ->columnSpanFull(),
+                                            Forms\Components\TextInput::make('late_fee_percentage')
+                                                ->label('Porcentaje de Mora')
+                                                ->required()
+                                                ->numeric()
+                                                ->default(5.00)
+                                                ->minValue(0)
+                                                ->maxValue(100)
+                                                ->suffix('%')
+                                                ->helperText('Mora aplicada sobre el saldo pendiente por cuota vencida'),
+                                        ]),
+                                ])
+                                ->visible(fn (Get $get) => $get('payment_plan_type') === 'installments'),
+                        ]),
 
-                        // Sección de Pago Mínimo Mensual
-                        Forms\Components\Section::make('Configuración de Pago Mínimo')
-                            ->description('El cliente debe pagar mensualmente los intereses generados hasta liquidar la deuda.')
-                            ->schema([
-                                Forms\Components\Hidden::make('requires_minimum_payment')
-                                    ->default(true)
-                                    ->dehydrated(),
-                                Forms\Components\Grid::make(2)
-                                    ->schema([
-                                        Forms\Components\TextInput::make('minimum_monthly_payment')
-                                            ->label('Pago Mínimo Mensual (Auto-calculado)')
-                                            ->numeric()
-                                            ->prefix('Q')
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->helperText('Se calcula automáticamente como: Capital × Tasa de Interés'),
-                                        Forms\Components\TextInput::make('grace_period_days')
-                                            ->label('Días de Gracia')
-                                            ->required()
-                                            ->numeric()
-                                            ->default(5)
-                                            ->minValue(0)
-                                            ->maxValue(30)
-                                            ->suffix('días')
-                                            ->helperText('Días de tolerancia después de vencer el pago mensual'),
-                                    ]),
-                            ])
-                            ->visible(fn (Get $get) => $get('payment_plan_type') === 'minimum_payment'),
+                    Wizard\Step::make('Estado y Notas')
+                        ->icon('heroicon-o-clipboard-document-check')
+                        ->description('Configure el estado inicial y agregue notas')
+                        ->schema([
+                            Forms\Components\Select::make('status')
+                                ->label('Estado del Préstamo')
+                                ->required()
+                                ->options([
+                                    Loan::STATUS_PENDING => 'Pendiente',
+                                    Loan::STATUS_ACTIVE => 'Activo',
+                                    Loan::STATUS_PAID => 'Pagado',
+                                    Loan::STATUS_OVERDUE => 'Vencido',
+                                    Loan::STATUS_FORFEITED => 'Confiscado',
+                                ])
+                                ->default(Loan::STATUS_ACTIVE)
+                                ->native(false)
+                                ->helperText('Las fechas de pago y confiscación se registran automáticamente'),
+                            Forms\Components\Textarea::make('notes')
+                                ->label('Notas y Observaciones')
+                                ->rows(4)
+                                ->placeholder('Agregue cualquier nota relevante sobre este préstamo...')
+                                ->columnSpanFull(),
+                        ]),
 
-                        // Sección de Cuotas
-                        Forms\Components\Section::make('Configuración de Cuotas')
-                            ->description('El préstamo se divide en cuotas iguales con amortización (capital + interés).')
-                            ->schema([
-                                Forms\Components\Grid::make(3)
-                                    ->schema([
-                                        Forms\Components\TextInput::make('number_of_installments')
-                                            ->label('Número de Cuotas')
-                                            ->required()
-                                            ->numeric()
-                                            ->default(12)
-                                            ->minValue(1)
-                                            ->maxValue(60)
-                                            ->suffix('cuotas')
-                                            ->live(onBlur: true)
-                                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                                self::calculateInstallmentAmount($get, $set);
-                                            })
-                                            ->helperText('Total de cuotas en las que se dividirá el préstamo'),
-                                        Forms\Components\TextInput::make('installment_frequency_days')
-                                            ->label('Frecuencia de Pago')
-                                            ->required()
-                                            ->numeric()
-                                            ->default(30)
-                                            ->minValue(1)
-                                            ->maxValue(90)
-                                            ->suffix('días')
-                                            ->helperText('Días entre cada cuota (30 = mensual)'),
-                                        Forms\Components\TextInput::make('installment_amount')
-                                            ->label('Monto de Cuota (Auto-calculado)')
-                                            ->numeric()
-                                            ->prefix('Q')
-                                            ->disabled()
-                                            ->dehydrated()
-                                            ->helperText('Calculado usando sistema de amortización francesa'),
-                                        Forms\Components\TextInput::make('late_fee_percentage')
-                                            ->label('Porcentaje de Mora')
-                                            ->required()
-                                            ->numeric()
-                                            ->default(5.00)
-                                            ->minValue(0)
-                                            ->maxValue(100)
-                                            ->suffix('%')
-                                            ->helperText('Mora aplicada sobre el saldo pendiente por cuota vencida'),
-                                    ]),
-                            ])
-                            ->visible(fn (Get $get) => $get('payment_plan_type') === 'installments'),
-                    ]),
+                    Wizard\Step::make('Revisión')
+                        ->icon('heroicon-o-check-circle')
+                        ->description('Revise todos los datos antes de guardar')
+                        ->schema([
+                            Forms\Components\Placeholder::make('review_info')
+                                ->label('')
+                                ->live()
+                                ->content(function (Get $get) {
+                                    $loanAmount = number_format((float) $get('loan_amount'), 2);
+                                    $interestRate = $get('interest_rate');
+                                    $interestAmount = number_format((float) $get('interest_amount'), 2);
+                                    $totalAmount = number_format((float) $get('total_amount'), 2);
+                                    $planType = $get('payment_plan_type') === 'minimum_payment' ? 'Pago Mínimo Mensual' : 'Cuotas Fijas';
+
+                                    $html = "
+                                    <div class='space-y-4'>
+                                        <div class='rounded-lg bg-primary-50 dark:bg-primary-900/20 p-4'>
+                                            <h3 class='text-lg font-semibold text-primary-600 dark:text-primary-400 mb-3'>Resumen del Préstamo</h3>
+
+                                            <div class='grid grid-cols-2 gap-3 text-sm'>
+                                                <div>
+                                                    <span class='text-gray-500 dark:text-gray-400'>Capital:</span>
+                                                    <span class='ml-2 font-semibold text-gray-900 dark:text-white'>Q {$loanAmount}</span>
+                                                </div>
+                                                <div>
+                                                    <span class='text-gray-500 dark:text-gray-400'>Tasa de Interés:</span>
+                                                    <span class='ml-2 font-semibold text-gray-900 dark:text-white'>{$interestRate}%</span>
+                                                </div>
+                                                <div>
+                                                    <span class='text-gray-500 dark:text-gray-400'>Interés Mensual:</span>
+                                                    <span class='ml-2 font-semibold text-gray-900 dark:text-white'>Q {$interestAmount}</span>
+                                                </div>
+                                                <div>
+                                                    <span class='text-gray-500 dark:text-gray-400'>Total:</span>
+                                                    <span class='ml-2 font-semibold text-success-600 dark:text-success-400'>Q {$totalAmount}</span>
+                                                </div>
+                                                <div class='col-span-2'>
+                                                    <span class='text-gray-500 dark:text-gray-400'>Plan de Pago:</span>
+                                                    <span class='ml-2 font-semibold text-gray-900 dark:text-white'>{$planType}</span>
+                                                </div>
+                                            </div>
+                                        </div>";
+
+                                    if ($get('payment_plan_type') === 'minimum_payment') {
+                                        $minPayment = number_format((float) $get('minimum_monthly_payment'), 2);
+                                        $graceDays = $get('grace_period_days');
+                                        $html .= "
+                                        <div class='rounded-lg bg-warning-50 dark:bg-warning-900/20 p-4'>
+                                            <h4 class='font-semibold text-warning-600 dark:text-warning-400 mb-2'>Pago Mínimo Mensual</h4>
+                                            <p class='text-sm text-gray-600 dark:text-gray-300'>
+                                                El cliente debe pagar <strong>Q {$minPayment}</strong> mensualmente.
+                                                <br>Días de gracia: <strong>{$graceDays} días</strong>
+                                            </p>
+                                        </div>";
+                                    } else {
+                                        $numInstallments = $get('number_of_installments');
+                                        $installmentAmount = number_format((float) $get('installment_amount'), 2);
+                                        $frequency = $get('installment_frequency_days');
+                                        $html .= "
+                                        <div class='rounded-lg bg-success-50 dark:bg-success-900/20 p-4'>
+                                            <h4 class='font-semibold text-success-600 dark:text-success-400 mb-2'>Plan de Cuotas Fijas</h4>
+                                            <p class='text-sm text-gray-600 dark:text-gray-300'>
+                                                <strong>{$numInstallments} cuotas</strong> de <strong>Q {$installmentAmount}</strong> c/u
+                                                <br>Frecuencia: cada <strong>{$frequency} días</strong>
+                                            </p>
+                                        </div>";
+                                    }
+
+                                    $html .= "
+                                        <div class='rounded-lg bg-info-50 dark:bg-info-900/20 p-4'>
+                                            <p class='text-sm text-info-600 dark:text-info-400'>
+                                                ℹ️ Revise toda la información antes de guardar. Podrá editar el préstamo posteriormente si es necesario.
+                                            </p>
+                                        </div>
+                                    </div>";
+
+                                    return new \Illuminate\Support\HtmlString($html);
+                                }),
+                        ]),
+                ])
+                ->columnSpanFull()
+                ->persistStepInQueryString(),
             ]);
     }
 
@@ -302,8 +423,8 @@ class LoanResource extends Resource
             return;
         }
 
-        // Tasa mensual (asumiendo que interest_rate es anual)
-        $monthlyRate = ($interestRate / 100) / 12;
+        // Tasa mensual (la tasa ingresada ya es mensual)
+        $monthlyRate = $interestRate / 100;
 
         // Calcular cuota usando fórmula de amortización francesa
         // PMT = P * [r(1 + r)^n] / [(1 + r)^n - 1]

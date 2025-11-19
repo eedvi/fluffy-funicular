@@ -5,6 +5,8 @@ namespace App\Providers\Filament;
 use Filament\Http\Middleware\Authenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Alareqi\FilamentPwa\FilamentPwaPlugin;
+use Hasnayeen\Themes\ThemesPlugin;
+use Hasnayeen\Themes\Http\Middleware\SetTheme;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -77,9 +79,11 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
                 ThrottleRequests::class . ':60,1', // 60 requests per minute
+                SetTheme::class,
             ])
             ->plugins([
                 FilamentShieldPlugin::make(),
+                ThemesPlugin::make(),
                 FilamentPwaPlugin::make()
                     ->name('Sistema de Empeño')
                     ->shortName('Empeño')
